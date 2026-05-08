@@ -61,21 +61,39 @@ DB_CONNECTION=localhost:1521/XEPDB1
 JWT_SECRET=una_clave_secreta_larga_y_segura
 ```
 
-> **Importante:** Nunca subas el archivo `.env` al repositorio. Ya está incluido en el `.gitignore`.
+> ⚠️ **Importante:** Nunca subas el archivo `.env` al repositorio. Ya está incluido en el `.gitignore`.
 
-> Si tu Oracle XE usa un service name diferente, cambia `XEPDB1` por `XE` o el que corresponda.
+> 💡 Si tu Oracle XE usa un service name diferente, cambia `XEPDB1` por `XE` o el que corresponda.
 
-### 4. Crear el usuario semilla
+### 4. Correr los scripts semilla
 
-Antes de correr el servidor por primera vez, crea un usuario de prueba en la BD:
+Antes de correr el servidor por primera vez, ejecuta los scripts en este orden:
 
 ```bash
+# 1. Estudiante de prueba (Sergio Gomar)
 node src/scripts/seedUsuario.js
+
+# 2. Agente de incidentes
+node src/scripts/seedAgente.js
+
+# 3. Agentes de solicitudes y cambios
+node src/scripts/seedAgentes.js
+
+# 4. Coordinador
+node src/scripts/seedCoordinador.js
 ```
 
-Esto crea un estudiante con las siguientes credenciales:
-- **Correo:** `sergio@miumg.edu.gt`
-- **Contraseña:** `123456`
+### Usuarios de prueba
+
+| Rol | Correo | Contraseña | Detalle |
+|---|---|---|---|
+| Estudiante | `sergio@miumg.edu.gt` | `123456` | Sergio Gomar — Ingeniería en Sistemas |
+| Agente | `agente@miumg.edu.gt` | `123456` | Especialidad: Incidente |
+| Agente | `solicitudes@miumg.edu.gt` | `123456` | Especialidad: Solicitud |
+| Agente | `cambios@miumg.edu.gt` | `123456` | Especialidad: Cambio |
+| Coordinador | `coordinador@miumg.edu.gt` | `123456` | NivelAcceso: 3 — puede crear usuarios |
+
+> ⚠️ Estos usuarios son solo para desarrollo y pruebas. Nunca uses estas credenciales en producción.
 
 ### 5. Correr el servidor
 
@@ -108,21 +126,28 @@ Deberías recibir:
 server/
 ├── src/
 │   ├── config/
-│   │   └── db.js              # Conexión y pool de Oracle
-│   ├── controllers/           # Reciben req/res, llaman a servicios
+│   │   └── db.js                  # Conexión y pool de Oracle
+│   ├── controllers/               # Reciben req/res, llaman a servicios
 │   │   ├── auth.controller.js
-│   │   └── ticket.controller.js
-│   ├── services/              # Lógica de negocio y queries Oracle
-│   │   └── ticket.service.js
-│   ├── routes/                # Definición de endpoints
+│   │   ├── ticket.controller.js
+│   │   └── agente.controller.js
+│   ├── services/                  # Lógica de negocio y queries Oracle
+│   │   ├── auth.service.js
+│   │   ├── ticket.service.js
+│   │   └── agente.service.js
+│   ├── routes/                    # Definición de endpoints
 │   │   ├── auth.routes.js
-│   │   └── ticket.routes.js
+│   │   ├── ticket.routes.js
+│   │   └── agente.routes.js
 │   ├── middleware/
-│   │   └── auth.middleware.js # Verificación JWT y roles
+│   │   └── auth.middleware.js     # Verificación JWT y roles
 │   ├── scripts/
-│   │   └── seedUsuario.js     # Script para crear usuario de prueba
-│   └── index.js               # Punto de entrada
-├── .env                       # Variables de entorno (NO en el repo)
+│   │   ├── seedUsuario.js         # Estudiante de prueba (Sergio Gomar)
+│   │   ├── seedAgente.js          # Agente de incidentes
+│   │   ├── seedAgentes.js         # Agentes de solicitudes y cambios
+│   │   └── seedCoordinador.js     # Coordinador gerencial
+│   └── index.js                   # Punto de entrada
+├── .env                           # Variables de entorno (NO en el repo)
 └── package.json
 ```
 
@@ -138,7 +163,16 @@ server/
 ### Tickets
 | Método | Endpoint | Descripción | Auth |
 |---|---|---|---|
-| POST | `/api/tickets` | Crear ticket | Estudiante |
+| POST | `/api/tickets` | Crear ticket (asigna agente automáticamente) | Estudiante |
+| GET | `/api/tickets` | Obtener mis tickets | Estudiante |
+| GET | `/api/tickets/ultimo` | Obtener último ticket abierto | Estudiante |
+
+### Agentes
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| GET | `/api/agentes/perfil` | Obtener perfil del agente autenticado | Agente, Coordinador |
+| GET | `/api/agentes/:idAgente/tickets` | Obtener tickets asignados al agente | Agente, Coordinador |
+| GET | `/api/agentes/:idAgente/ticket-prioridad` | Obtener ticket de mayor prioridad abierto | Agente, Coordinador |
 
 ---
 
@@ -154,11 +188,11 @@ server/
 | `BasesConocimiento` | Repositorio de artículos de ayuda |
 | `Articulos` | Artículo individual de autogestión |
 
-> Oracle guarda los nombres de tabla y columna sensibles a mayúsculas porque EF Core los creó con comillas. Usa siempre comillas dobles en las queries: `SELECT * FROM "Usuarios"`.
+> ⚠️ Oracle guarda los nombres de tabla y columna sensibles a mayúsculas porque EF Core los creó con comillas. Usa siempre comillas dobles en las queries: `SELECT * FROM "Usuarios"`.
 
 ---
 
-## Problemas comunes
+## ⚠️ Problemas comunes
 
 **`connectString` cannot be empty**
 → El archivo `.env` no se está leyendo correctamente. Verifica que esté en la raíz de la carpeta `server/` y que el servidor se corra desde esa misma carpeta.
