@@ -46,6 +46,15 @@ const crearTicket = async ({tipologiaITIL, descripcion, idEstudiante}) => {
         await connection.commit();
 
         return { idTicket, tipologiaITIL, descripcion, prioridad, estado: 'Abierto' };
+
+        console.log(`\nTicket creado: {
+            fechaCreacion = SYSDATE,
+            idTicket = ${idTicket},
+            tipologiaITIL = ${tipologiaITIL},
+            descripcion = ${descripcion},
+            prioridad = ${prioridad},
+            estado: 'Abierto'
+        }\n`);
     } catch (error) {
         if (connection) await connection.rollback();
         console.error('Error en crearTicket:', error);
@@ -57,7 +66,7 @@ const crearTicket = async ({tipologiaITIL, descripcion, idEstudiante}) => {
 
 const obtenerTicketsEstudiante = async (idEstudiante) => {
   let conn
-  try {
+    try {
     conn = await getConnection()
 
     const result = await conn.execute(
@@ -87,11 +96,16 @@ const obtenerTicketsEstudiante = async (idEstudiante) => {
       tipologiaITIL,
       estado,
       ultimoEstado
-    }))
+    }));
 
-  } finally {
-    if (conn) await conn.close()
-  }
+    console.log(`\nTickets del estudiante ${idEstudiante}:`, result.rows);
+
+    } catch (err) {
+        console.error('Error al obtener ticket:', err)
+        throw err
+    } finally {
+        if (conn) await conn.close()
+    }
 }
 
 const obtenerUltimoTicket = async (idEstudiante) => {
@@ -118,6 +132,11 @@ const obtenerUltimoTicket = async (idEstudiante) => {
     const [idTicket, fechaCreacion, prioridadSLA, tipologiaITIL, estado] = result.rows[0]
     return { idTicket, fechaCreacion, prioridadSLA, tipologiaITIL, estado }
 
+    console.log(`\nUltimo ticket del estudiante ${idEstudiante}:`, result.rows[0]);
+
+  } catch (err) {
+    console.error('Error al obtener el ultimo ticket:', err)
+    throw err
   } finally {
     if (conn) await conn.close()
   }

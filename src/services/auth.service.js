@@ -35,6 +35,11 @@ const login = async ({ correo, password }) => {
       usuario: { idUsuario, nombreCompleto, correoInstitucional, rol }
     }
 
+    console.log(`\nUsuario autenticado: ${correoInstitucional} (ID: ${idUsuario}, Rol: ${rol})`);
+
+  } catch (err) {
+    console.error('Error en authService.login:', err)
+    throw err
   } finally {
     if (connection) await connection.close()
   }
