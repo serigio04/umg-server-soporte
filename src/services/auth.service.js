@@ -30,12 +30,12 @@ const login = async ({ correo, password }) => {
       { expiresIn: '8h' }
     )
 
+    console.log(`\nUsuario autenticado: ${correoInstitucional} (ID: ${idUsuario}, Rol: ${rol})`);
+
     return {
       token,
       usuario: { idUsuario, nombreCompleto, correoInstitucional, rol }
     }
-
-    console.log(`\nUsuario autenticado: ${correoInstitucional} (ID: ${idUsuario}, Rol: ${rol})`);
 
   } catch (err) {
     console.error('Error en authService.login:', err)
