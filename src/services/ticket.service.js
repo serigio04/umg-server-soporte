@@ -16,21 +16,20 @@ const crearTicket = async ({tipologiaITIL, descripcion, idEstudiante}) => {
         connection = await getConnection();
 
         const result = await connection.execute(
-            `INSERT INTO "Tickets"
-                ("FechaCreacion", "PrioridadSLA", "TipologiaITIL", "Estado", "IdEstudiante")
-            VALUES
-                (SYSDATE, :prioridad, :tipologia, 'Abierto', :idEstudiante)
-            RETURNING "IdTicket" INTO :idTicket`,
-            {
-                prioridad,
-                tipologia: tipologiaITIL,
-                idEstudiante,
-                idTicket: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER}
-            },
-            {
-                autoCommit: false
-            }
-        );
+        `INSERT INTO "Tickets"
+            ("FechaCreacion", "PrioridadSLA", "TipologiaITIL", "Estado", "IdEstudiante", "Descripcion")
+        VALUES
+            (SYSDATE, :prioridad, :tipologia, 'Abierto', :idEstudiante, :descripcion)
+        RETURNING "IdTicket" INTO :idTicket`,
+        {
+            prioridad,
+            tipologia: tipologiaITIL,
+            idEstudiante,
+            descripcion,
+            idTicket: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
+        },
+        { autoCommit: false }
+        )
 
         const idTicket = result.outBinds.idTicket[0];
 
@@ -46,7 +45,7 @@ const crearTicket = async ({tipologiaITIL, descripcion, idEstudiante}) => {
         await connection.commit();
 
         console.log(`\nTicket creado: {
-            fechaCreacion = ${SYSDATE},
+            fechaCreacion = ${oracledb.SYSDATE},
             idTicket = ${idTicket},
             tipologiaITIL = ${tipologiaITIL},
             descripcion = ${descripcion},
@@ -83,7 +82,8 @@ const obtenerTicketsEstudiante = async (idEstudiante) => {
           WHERE e."TicketIdTicket" = t."IdTicket"
           ORDER BY e."FechaCambio" DESC
           FETCH FIRST 1 ROWS ONLY
-        ) AS ULTIMO_ESTADO
+        ) AS ULTIMO_ESTADO,
+        t."Descripcion"
        FROM "Tickets" t
        WHERE t."IdEstudiante" = :idEstudiante
        ORDER BY t."FechaCreacion" DESC`,
@@ -92,13 +92,14 @@ const obtenerTicketsEstudiante = async (idEstudiante) => {
 
     console.log(`\nTickets del estudiante ${idEstudiante}:`, result.rows);
 
-    return result.rows.map(([idTicket, fechaCreacion, prioridadSLA, tipologiaITIL, estado, ultimoEstado]) => ({
+    return result.rows.map(([idTicket, fechaCreacion, prioridadSLA, tipologiaITIL, estado, ultimoEstado, descripcion]) => ({
       idTicket,
       fechaCreacion,
       prioridadSLA,
       tipologiaITIL,
       estado,
-      ultimoEstado
+      ultimoEstado,
+      descripcion
     }));
 
     } catch (err) {
@@ -120,7 +121,8 @@ const obtenerUltimoTicket = async (idEstudiante) => {
         t."FechaCreacion",
         t."PrioridadSLA",
         t."TipologiaITIL",
-        t."Estado"
+        t."Estado",
+        t."Descripcion"
        FROM "Tickets" t
        WHERE t."IdEstudiante" = :idEstudiante
        ORDER BY t."FechaCreacion" DESC
@@ -130,11 +132,11 @@ const obtenerUltimoTicket = async (idEstudiante) => {
 
     if (result.rows.length === 0) return null
 
-    const [idTicket, fechaCreacion, prioridadSLA, tipologiaITIL, estado] = result.rows[0];
+    const [idTicket, fechaCreacion, prioridadSLA, tipologiaITIL, estado, descripcion] = result.rows[0];
 
     console.log(`\nUltimo ticket del estudiante ${idEstudiante}:`, result.rows[0]);
 
-    return { idTicket, fechaCreacion, prioridadSLA, tipologiaITIL, estado }
+    return { idTicket, fechaCreacion, prioridadSLA, tipologiaITIL, estado, descripcion };
 
   } catch (err) {
     console.error('Error al obtener el ultimo ticket:', err)
