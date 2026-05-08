@@ -15,17 +15,31 @@ const crearTicket = async ({tipologiaITIL, descripcion, idEstudiante}) => {
     try {
         connection = await getConnection();
 
-        const result = await connection.execute(
+                // Busca el agente con especialidad que coincida con la tipología
+        const agenteResult = await conn.execute(
+        `SELECT "IdAgente" FROM "Agentes"
+        WHERE "Especialidad" = :tipologia
+        AND ROWNUM = 1`,
+        { tipologia: tipologiaITIL }
+        )
+
+        const idAgente = agenteResult.rows.length > 0
+        ? agenteResult.rows[0][0]
+        : null
+
+        // Agrega IdAgente al INSERT de Tickets
+        const result = await conn.execute(
         `INSERT INTO "Tickets"
-            ("FechaCreacion", "PrioridadSLA", "TipologiaITIL", "Estado", "IdEstudiante", "Descripcion")
+            ("FechaCreacion", "PrioridadSLA", "TipologiaITIL", "Estado", "IdEstudiante", "Descripcion", "IdAgente")
         VALUES
-            (SYSDATE, :prioridad, :tipologia, 'Abierto', :idEstudiante, :descripcion)
+            (SYSDATE, :prioridad, :tipologia, 'Abierto', :idEstudiante, :descripcion, :idAgente)
         RETURNING "IdTicket" INTO :idTicket`,
         {
             prioridad,
             tipologia: tipologiaITIL,
             idEstudiante,
             descripcion,
+            idAgente,
             idTicket: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
         },
         { autoCommit: false }
@@ -52,6 +66,8 @@ const crearTicket = async ({tipologiaITIL, descripcion, idEstudiante}) => {
             prioridad = ${prioridad},
             estado: 'Abierto'
         }\n`);
+
+        console.log(`Agente asignado: ${idAgente ? idAgente : 'Ninguno (asignación manual posterior)'}`);
 
         return { idTicket, tipologiaITIL, descripcion, prioridad, estado: 'Abierto' };
 
