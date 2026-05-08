@@ -35,11 +35,11 @@ const crearTicket = async ({tipologiaITIL, descripcion, idEstudiante}) => {
         const idTicket = result.outBinds.idTicket[0];
 
         await connection.execute(
-            `INSERT INTO "EstadosTicket" 
-                ("NombreEstado", "FechaCambio", "ComentarioTecnico", "TicketIdTicket")
+            `INSERT INTO "EstadosTicket"
+                ("NombreEstado", "FechaCambio", "ComentarioTecnico", "IdTicket", "TicketIdTicket")
             VALUES
-                ('Abierto', SYSDATE, 'Ticket creado', :idTicket)`,
-            { idTicket },
+                ('Abierto', SYSDATE, 'Ticket creado', :idTicket, :idTicket2)`,
+            { idTicket, idTicket2: idTicket },
             { autoCommit: false }
         );
 
@@ -49,7 +49,7 @@ const crearTicket = async ({tipologiaITIL, descripcion, idEstudiante}) => {
     } catch (error) {
         if (connection) await connection.rollback();
         console.error('Error en crearTicket:', error);
-        throw err;
+        throw error;
     } finally {
         if (connection) await connection.close();
     };

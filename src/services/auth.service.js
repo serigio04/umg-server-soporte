@@ -36,7 +36,7 @@ const login = async ({ correo, password }) => {
     }
 
   } finally {
-    if (conn) await conn.close()
+    if (connection) await connection.close()
   }
 }
 
