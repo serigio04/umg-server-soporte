@@ -8,6 +8,8 @@ const app = express();
 app.use(cors({ origin: 'http://localhost:5173' })); // puerto de Vite
 app.use(express.json());
 
+//rutas
+app.use('/api/auth', require('./routes/auth.route'))
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor corriendo' });
