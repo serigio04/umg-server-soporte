@@ -11,6 +11,7 @@ app.use(express.json());
 //rutas
 app.use('/api/auth', require('./routes/auth.route'));
 app.use('/api/tickets', require('./routes/ticket.route'));
+app.use('/api/agentes', require('./routes/agente.route'))
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor corriendo' });
