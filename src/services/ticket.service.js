@@ -16,7 +16,7 @@ const crearTicket = async ({tipologiaITIL, descripcion, idEstudiante}) => {
         connection = await getConnection();
 
                 // Busca el agente con especialidad que coincida con la tipología
-        const agenteResult = await conn.execute(
+        const agenteResult = await connection.execute(
         `SELECT "IdAgente" FROM "Agentes"
         WHERE "Especialidad" = :tipologia
         AND ROWNUM = 1`,
@@ -28,7 +28,7 @@ const crearTicket = async ({tipologiaITIL, descripcion, idEstudiante}) => {
         : null
 
         // Agrega IdAgente al INSERT de Tickets
-        const result = await conn.execute(
+        const result = await connection.execute(
         `INSERT INTO "Tickets"
             ("FechaCreacion", "PrioridadSLA", "TipologiaITIL", "Estado", "IdEstudiante", "Descripcion", "IdAgente")
         VALUES

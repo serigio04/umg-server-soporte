@@ -52,12 +52,13 @@ const obtenerTicketPrioridad = async (idAgente) => {
        WHERE t."IdAgente" = :idAgente
        AND t."Estado" = 'Abierto'
        ORDER BY 
-         CASE t."PrioridadSLA"
-           WHEN 'Alta'  THEN 1
-           WHEN 'Media' THEN 2
-           WHEN 'Baja'  THEN 3
-         END ASC,
-         t."FechaCreacion" ASC
+        CASE 
+          WHEN t."PrioridadSLA" = 'Alta'  THEN 1
+          WHEN t."PrioridadSLA" = 'Media' THEN 2
+          WHEN t."PrioridadSLA" = 'Baja'  THEN 3
+          ELSE 4
+        END ASC,
+        t."FechaCreacion" ASC
        FETCH FIRST 1 ROWS ONLY`,
       { idAgente }
     )
