@@ -1,26 +1,22 @@
-const oracledb = require('oracledb');
+const { Pool } = require('pg')
 
-const dbConfig = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  connectString: process.env.DB_CONNECTION,
-  poolMin: 2,
-  poolMax: 10,
-  poolIncrement: 1
-};
+const pool = new Pool({
+  connectionString: process.env.DB_CONNECTION,
+  ssl: { rejectUnauthorized: false }
+})
 
 async function initDB() {
   try {
-    await oracledb.createPool(dbConfig);
-    console.log('Conexión a Oracle establecida');
+    await pool.query('SELECT 1')
+    console.log('Conexión a Neon PostgreSQL establecida')
   } catch (err) {
-    console.error('Error conectando a Oracle:', err);
-    process.exit(1);
+    console.error('Error conectando a Neon:', err)
+    process.exit(1)
   }
 }
 
 async function getConnection() {
-  return await oracledb.getConnection();
+  return await pool.connect()
 }
 
-module.exports = { initDB, getConnection };
+module.exports = { initDB, getConnection, pool }
