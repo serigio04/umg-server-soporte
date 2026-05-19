@@ -1,6 +1,6 @@
 # Sistema de Soporte UMG — Servidor
 
-API REST del sistema de gestión de tickets de soporte para estudiantes y catedráticos de la Universidad Mariano Gálvez. Construida con Express.js y conectada a Oracle XE local.
+API REST del sistema de gestión de tickets de soporte para estudiantes y catedráticos de la Universidad Mariano Gálvez. Construida con Express.js y conectada a PostgreSQL (compatible con Neon u otro proveedor PostgreSQL).
 
 ---
 
@@ -19,17 +19,17 @@ API REST del sistema de gestión de tickets de soporte para estudiantes y catedr
 
 - **Runtime:** Node.js
 - **Framework:** Express.js
-- **Base de datos:** Oracle XE (local)
-- **Driver BD:** oracledb (oficial de Oracle)
-- **Autenticación:** JWT (jsonwebtoken) + BCrypt (bcryptjs)
-- **Variables de entorno:** dotenv
+- **Base de datos:** PostgreSQL (Neon o local)
+- **Driver BD:** `pg` (node-postgres)
+- **Autenticación:** JWT (`jsonwebtoken`) + BCrypt (`bcryptjs`)
+- **Variables de entorno:** `dotenv`
 
 ---
 
 ## Requisitos previos
 
 - [Node.js 18+](https://nodejs.org/)
-- [Oracle XE 21c](https://www.oracle.com/database/technologies/xe-downloads.html) instalado y corriendo localmente
+- Un servicio PostgreSQL accesible (puede ser local, Docker o Neon)
 - Git
 
 ---
@@ -51,35 +51,31 @@ npm install
 
 ### 3. Crear el archivo de variables de entorno
 
-Este archivo **no está en el repositorio** por seguridad. Créalo manualmente en la raíz de la carpeta `server/`:
+Este archivo **no está en el repositorio** por seguridad. Créalo manualmente en la raíz del proyecto (misma carpeta que `package.json`):
 
 ```env
 PORT=3000
-DB_USER=UMG_ANALISIS
-DB_PASSWORD=tu_password
-DB_CONNECTION=localhost:1521/XEPDB1
+# Cadena de conexión PostgreSQL completa. Ejemplos:
+# Local: postgres://usuario:password@localhost:5432/nombre_basedatos
+# Neon / URL: postgres://<user>:<pass>@<host>/<db>
+DB_CONNECTION=postgres://UMG_ANALISIS:tu_password@localhost:5432/umgdb
 JWT_SECRET=una_clave_secreta_larga_y_segura
 ```
 
 > ⚠️ **Importante:** Nunca subas el archivo `.env` al repositorio. Ya está incluido en el `.gitignore`.
 
-> 💡 Si tu Oracle XE usa un service name diferente, cambia `XEPDB1` por `XE` o el que corresponda.
-
 ### 4. Correr los scripts semilla
 
-Antes de correr el servidor por primera vez, ejecuta los scripts en este orden:
+Antes de correr el servidor por primera vez en **LOCAL**, ejecuta los scripts en este orden (desde la raíz del proyecto), en linea no es necesario:
 
 ```bash
-# 1. Estudiante de prueba (Sergio Gomar)
-node src/scripts/seedUsuario.js
+# 1. Estudiantes
+node src/scripts/seedEstudiantes.js
 
-# 2. Agente de incidentes
-node src/scripts/seedAgente.js
-
-# 3. Agentes de solicitudes y cambios
+# 2. Agentes adicionales (solicitudes y cambios)
 node src/scripts/seedAgentes.js
 
-# 4. Coordinador
+# 3. Coordinador
 node src/scripts/seedCoordinador.js
 ```
 
@@ -87,18 +83,22 @@ node src/scripts/seedCoordinador.js
 
 | Rol | Correo | Contraseña | Detalle |
 |---|---|---|---|
-| Estudiante | `sergio@miumg.edu.gt` | `123456` | Sergio Gomar — Ingeniería en Sistemas |
-| Agente | `agente@miumg.edu.gt` | `123456` | Especialidad: Incidente |
+| Estudiante 1 | `sgomar@miumg.edu.gt` | `123456` | Sergio Gomar — Ingeniería en Sistemas |
+| Estudiante 2 | `fhipolito@miumg.edu.gt` | `123456` | Fabiola Hipolito — Ingeniería en Sistemas |
+| Estudiante 3 | `cdeleon@miumg.edu.gt` | `123456` | Claudia de Leon — Ingeniería en Sistemas |
+| Estudiante 4 | `ajacinto@miumg.edu.gt` | `123456` | Angie Jacinto — Ingeniería en Sistemas |
+| Agente | `incidentes@miumg.edu.gt` | `123456` | Especialidad: Incidente |
 | Agente | `solicitudes@miumg.edu.gt` | `123456` | Especialidad: Solicitud |
 | Agente | `cambios@miumg.edu.gt` | `123456` | Especialidad: Cambio |
 | Coordinador | `coordinador@miumg.edu.gt` | `123456` | NivelAcceso: 3 — puede crear usuarios |
 
 > ⚠️ Estos usuarios son solo para desarrollo y pruebas. Nunca uses estas credenciales en producción.
 
+
 ### 5. Correr el servidor
 
 ```bash
-# Desarrollo (con reinicio automático)
+# Desarrollo
 npm run dev
 
 # Producción
@@ -123,29 +123,29 @@ Deberías recibir:
 ## Estructura del proyecto
 
 ```
-server/
+.
 ├── src/
 │   ├── config/
-│   │   └── db.js                  # Conexión y pool de Oracle
+│   │   └── db.js                  # Conexión y pool (pg) — usa DB_CONNECTION
 │   ├── controllers/               # Reciben req/res, llaman a servicios
 │   │   ├── auth.controller.js
 │   │   ├── ticket.controller.js
 │   │   └── agente.controller.js
-│   ├── services/                  # Lógica de negocio y queries Oracle
+│   ├── services/                  # Lógica de negocio y consultas PostgreSQL
 │   │   ├── auth.service.js
 │   │   ├── ticket.service.js
 │   │   └── agente.service.js
 │   ├── routes/                    # Definición de endpoints
-│   │   ├── auth.routes.js
-│   │   ├── ticket.routes.js
-│   │   └── agente.routes.js
-│   ├── middleware/
+│   │   ├── auth.route.js
+│   │   ├── ticket.route.js
+│   │   └── agente.route.js
+│   ├── middlewares/
 │   │   └── auth.middleware.js     # Verificación JWT y roles
 │   ├── scripts/
-│   │   ├── seedUsuario.js         # Estudiante de prueba (Sergio Gomar)
-│   │   ├── seedAgente.js          # Agente de incidentes
-│   │   ├── seedAgentes.js         # Agentes de solicitudes y cambios
-│   │   └── seedCoordinador.js     # Coordinador gerencial
+│   │   ├── seedUsuario.js
+│   │   ├── seedAgente.js
+│   │   ├── seedAgentes.js
+│   │   └── seedCoordinador.js
 │   └── index.js                   # Punto de entrada
 ├── .env                           # Variables de entorno (NO en el repo)
 └── package.json
@@ -188,23 +188,12 @@ server/
 | `BasesConocimiento` | Repositorio de artículos de ayuda |
 | `Articulos` | Artículo individual de autogestión |
 
-> ⚠️ Oracle guarda los nombres de tabla y columna sensibles a mayúsculas porque EF Core los creó con comillas. Usa siempre comillas dobles en las queries: `SELECT * FROM "Usuarios"`.
-
 ---
 
-## ⚠️ Problemas comunes
+## ⚠️ Problemas comunes y comprobaciones
 
-**`connectString` cannot be empty**
-→ El archivo `.env` no se está leyendo correctamente. Verifica que esté en la raíz de la carpeta `server/` y que el servidor se corra desde esa misma carpeta.
+- **Cadena de conexión inválida / error de conexión:** Verifica que `DB_CONNECTION` en `.env` esté bien formada y que la base de datos PostgreSQL esté accesible.
+- **Tablas faltantes / errores en queries:** Revisa que las migraciones o scripts de creación de tablas se hayan ejecutado antes de correr los seeds.
+- **Puerto 3000 en uso:** Cambia el valor de `PORT` en el `.env` o cierra el proceso que usa ese puerto con `npx kill-port 3000`.
 
-**ORA-00942: la tabla o vista no existe**
-→ Oracle es sensible a mayúsculas. Asegúrate de usar comillas dobles en todas las queries: `SELECT * FROM "Usuarios"` en lugar de `SELECT * FROM USUARIOS`.
-
-**ORA-01017: invalid username/password**
-→ Verifica que `DB_USER` y `DB_PASSWORD` en el `.env` coincidan exactamente con el usuario de Oracle. El usuario correcto es `UMG_ANALISIS`.
-
-**Error de conexión al pool**
-→ Verifica que el servicio de Oracle esté corriendo. En Windows busca `OracleServiceXE` en los servicios de Windows y asegúrate de que esté iniciado.
-
-**Puerto 3000 en uso**
-→ Cambia el valor de `PORT` en el `.env` o cierra el proceso que usa ese puerto con `npx kill-port 3000`.
+Si necesitas que adapte el proyecto para usarse con Oracle en lugar de PostgreSQL, avísame y lo documentamos o añadimos una rama/archivo de configuración separado.
