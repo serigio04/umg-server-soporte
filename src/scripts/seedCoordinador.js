@@ -1,40 +1,38 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') })
-const { initDB, getConnection } = require('../config/db')
+const { pool } = require('../config/db')
 const bcrypt = require('bcryptjs')
-const oracledb = require('oracledb')
 
 async function seed() {
-  await initDB()
-  const conn = await getConnection()
-
+  const client = await pool.connect()
   try {
+    await client.query('BEGIN')
+
     const hash = await bcrypt.hash('123456', 10)
 
-    const r = await conn.execute(
-      `INSERT INTO "Usuarios" ("NombreCompleto", "CorreoInstitucional", "PasswordHash", "Rol")
-       VALUES ('Coordinador UMG', 'coordinador@miumg.edu.gt', :hash, 'Coordinador')
-       RETURNING "IdUsuario" INTO :idUsuario`,
-      { hash, idUsuario: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER } },
-      { autoCommit: false }
+    const userRes = await client.query(
+      `INSERT INTO Usuarios (NombreCompleto, CorreoInstitucional, PasswordHash, Rol)
+       VALUES ($1, $2, $3, 'Coordinador')
+       RETURNING IdUsuario`,
+      ['Coordinador UMG', 'coordinador@miumg.edu.gt', hash]
     )
 
-    const idUsuario = r.outBinds.idUsuario[0]
+    const idUsuario = userRes.rows[0].IdUsuario
 
-    await conn.execute(
-      `INSERT INTO "Agentes" ("Especialidad", "NivelAcceso", "SedeAsignada", "IdUsuario", "UsuarioIdUsuario")
-       VALUES ('General', 3, 'Campus Central', :idUsuario, :idUsuario2)`,
-      { idUsuario, idUsuario2: idUsuario },
-      { autoCommit: false }
+    await client.query(
+      `INSERT INTO Agentes (Especialidad, NivelAcceso, SedeAsignada, IdUsuario)
+       VALUES ($1, $2, $3, $4)`,
+      ['General', 3, 'Campus Central', idUsuario]
     )
 
-    await conn.commit()
-    console.log('✅ Coordinador creado — coordinador@miumg.edu.gt / 123456')
+    await client.query('COMMIT')
+    console.log('Coordinador creado — coordinador@miumg.edu.gt / 123456')
 
   } catch (err) {
-    await conn.rollback()
+    await client.query('ROLLBACK')
     throw err
   } finally {
-    await conn.close()
+    client.release()
+    await pool.end()
     process.exit()
   }
 }
