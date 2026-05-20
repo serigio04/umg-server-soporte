@@ -10,7 +10,7 @@ function verificarToken(req, res, next) {
     try {
         const payload = jwt.verify(token, process.env.JWT_SECRET);
         req.usuario = payload; // { idUsuario, rol }
-        console.log('Token verificado, payload:', payload);
+        //console.log('Token verificado, payload:', payload);
         next()
     } catch {
         res.status(403).json({ message: 'Token inválido o expirado' })
@@ -19,8 +19,8 @@ function verificarToken(req, res, next) {
 
 function soloRol(...roles) {
     return (req, res, next) => {
-        console.log('Verificando rol del usuario:', req.usuario);
-        console.log('Roles permitidos para esta ruta:', roles);
+        //console.log('Verificando rol del usuario:', req.usuario);
+        //console.log('Roles permitidos para esta ruta:', roles);
         if (!roles.includes(req.usuario.rol))
         return res.status(403).json({ message: 'No tienes permiso para esto' })
         next()

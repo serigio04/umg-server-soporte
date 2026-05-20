@@ -1,6 +1,27 @@
 const { pool } = require('../config/db')
 
-const crearTicket = async ({ tipologiaITIL, descripcion, idEstudiante }) => {
+const crearTicket = async ({ tipologiaITIL, descripcion, idUsuario, idEstudiante: idEstudianteParam, rol }) => {
+  let idEstudiante
+  
+  if (rol === 'Estudiante') {
+    console.log('Creando ticket para estudiante con usuario', idUsuario);
+    const est = await pool.query(
+      `SELECT idestudiante FROM estudiante WHERE idusuario = $1`, [idUsuario]
+    )
+    if (est.rows.length === 0) throw new Error('ESTUDIANTE_NO_ENCONTRADO')
+    idEstudiante = est.rows[0].idestudiante
+  } else if (rol === 'Agente') {
+    console.log('Creando ticket para estudiante', idEstudianteParam, 'por agente');
+    // Verificar que el estudiante existe
+    const est = await pool.query(
+      `SELECT idestudiante FROM estudiante WHERE idestudiante = $1`, [idEstudianteParam]
+    )
+    if (est.rows.length === 0) throw new Error('ESTUDIANTE_NO_ENCONTRADO')
+    idEstudiante = idEstudianteParam
+  }
+
+  console.log('Estudiante encontrado para usuario', idUsuario, ':', idEstudiante);
+  
   const tipologiasValidas = ['Incidente', 'Solicitud', 'Cambio']
   if (!tipologiasValidas.includes(tipologiaITIL)) throw new Error('Tipología inválida')
 
@@ -15,7 +36,7 @@ const crearTicket = async ({ tipologiaITIL, descripcion, idEstudiante }) => {
       `SELECT IdAgente FROM Agentes WHERE Especialidad = $1 LIMIT 1`,
       [tipologiaITIL]
     )
-    const idAgente = agente.rows.length > 0 ? agente.rows[0].IdAgente : null
+    const idAgente = agente.rows.length > 0 ? agente.rows[0].idagente : null
 
     const ticket = await client.query(
       `INSERT INTO Tickets (FechaCreacion, PrioridadSLA, TipologiaITIL, Estado, IdEstudiante, Descripcion, IdAgente)
@@ -33,7 +54,21 @@ const crearTicket = async ({ tipologiaITIL, descripcion, idEstudiante }) => {
     )
 
     await client.query('COMMIT')
-    return { idTicket, tipologiaITIL, prioridadSLA: prioridad, estado: 'Abierto' }
+    console.log(`
+      Ticket ${idTicket} creado:
+        ${
+          'ID:' + ticket.idTicket,
+          'Tipología:' + tipologiaITIL,
+          'Descripción:' + descripcion,
+          'Prioridad SLA:' + prioridad,
+          'Estado:' + 'Abierto',
+          'Agente asignado:' + (idAgente ? `Agente ID ${idAgente}` : 'No hay agente disponible para esta tipología')
+
+        }
+      `);
+    console.log('Ticket asignado al agente:', idAgente ? `Agente ID ${idAgente}` : 'No hay agente disponible para esta tipología');
+
+    return { idTicket, tipologiaITIL, descripcion, prioridadSLA: prioridad, estado: 'Abierto', idAgente}
 
   } catch (err) {
     await client.query('ROLLBACK')
@@ -43,50 +78,69 @@ const crearTicket = async ({ tipologiaITIL, descripcion, idEstudiante }) => {
   }
 }
 
-const obtenerTicketsEstudiante = async (idEstudiante) => {
+const obtenerTicketsEstudiante = async (idUsuario) => {
+  console.log('Usuario', idUsuario);
+  
+  const est = await pool.query(
+    `SELECT idestudiante FROM estudiante WHERE idusuario = $1`, [idUsuario]
+  )
+  if (est.rows.length === 0) throw new Error('ESTUDIANTE_NO_ENCONTRADO')
+
+    console.log('Usuario', idUsuario);
+
   const result = await pool.query(
-    `SELECT 
-      t.IdTicket, t.FechaCreacion, t.PrioridadSLA,
-      t.TipologiaITIL, t.Estado, t.Descripcion,
-      (SELECT e.NombreEstado FROM EstadosTicket e
-       WHERE e.IdTicket = t.IdTicket
-       ORDER BY e.FechaCambio DESC LIMIT 1) AS UltimoEstado
-     FROM Tickets t
-     WHERE t.IdEstudiante = $1
-     ORDER BY t.FechaCreacion DESC`,
-    [idEstudiante]
+    `SELECT idticket, fechacreacion, prioridadsla, tipologiaitil, estado, descripcion,
+      (SELECT e.nombreestado FROM estadosticket e
+       WHERE e.idticket = t.idticket
+       ORDER BY e.fechacambio DESC LIMIT 1) AS ultimoestado
+     FROM tickets t
+     WHERE t.idestudiante = $1
+     ORDER BY t.fechacreacion DESC`,
+    [est.rows[0].idestudiante]
   )
 
-  return result.rows.map(r => ({
-    idTicket:     r.IdTicket,
-    fechaCreacion: r.FechaCreacion,
-    prioridadSLA: r.PrioridadSLA,
-    tipologiaITIL: r.TipologiaITIL,
-    estado:       r.Estado,
-    descripcion:  r.Descripcion,
-    ultimoEstado: r.UltimoEstado
+  console.log('Tickets encontrados:', result.rows)
+
+  return result.rows.map(t => ({
+    idTicket:     t.idticket,
+    fechaCreacion: t.fechacreacion,
+    prioridadSLA: t.prioridadsla,
+    tipologiaITIL: t.tipologiaitil,
+    estado:       t.estado,
+    descripcion:  t.descripcion,
+    ultimoEstado: t.ultimoestado
   }))
 }
 
-const obtenerUltimoTicket = async (idEstudiante) => {
-  const result = await pool.query(
-    `SELECT IdTicket, FechaCreacion, PrioridadSLA, TipologiaITIL, Estado, Descripcion
-     FROM Tickets
-     WHERE IdEstudiante = $1
-     ORDER BY FechaCreacion DESC LIMIT 1`,
-    [idEstudiante]
+const obtenerUltimoTicket = async (idUsuario) => {
+  console.log('Usuario', idUsuario);
+  
+  const est = await pool.query(
+    `SELECT idestudiante FROM estudiante WHERE idusuario = $1`, [idUsuario]
   )
+  if (est.rows.length === 0) throw new Error('ESTUDIANTE_NO_ENCONTRADO')
+
+  const result = await pool.query(
+    `SELECT idticket, fechacreacion, prioridadsla, tipologiaitil, estado, descripcion
+     FROM tickets
+     WHERE idestudiante = $1
+     ORDER BY fechacreacion DESC LIMIT 1`,
+    [est.rows[0].idestudiante]
+  )
+
+  console.log('Tickets encontrados:', result.rows)
 
   if (result.rows.length === 0) return null
   const r = result.rows[0]
   return {
-    idTicket:     r.IdTicket,
-    fechaCreacion: r.FechaCreacion,
-    prioridadSLA: r.PrioridadSLA,
-    tipologiaITIL: r.TipologiaITIL,
-    estado:       r.Estado,
-    descripcion:  r.Descripcion
+    idTicket:     r.idticket,
+    fechaCreacion: r.fechacreacion,
+    prioridadSLA: r.prioridadsla,
+    tipologiaITIL: r.tipologiaitil,
+    estado:       r.estado,
+    descripcion:  r.descripcion
   }
 }
+
 
 module.exports = { crearTicket, obtenerTicketsEstudiante, obtenerUltimoTicket }
