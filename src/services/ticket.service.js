@@ -1,6 +1,6 @@
 const { pool } = require('../config/db')
 
-const crearTicket = async ({ tipologiaITIL, descripcion, idUsuario, idEstudiante: idEstudianteParam, rol }) => {
+const crearTicket = async ({ tipologiaITIL, descripcion, carnetEstudiante, idUsuario, rol }) => {
   let idEstudiante
   
   if (rol === 'Estudiante') {
@@ -11,13 +11,14 @@ const crearTicket = async ({ tipologiaITIL, descripcion, idUsuario, idEstudiante
     if (est.rows.length === 0) throw new Error('ESTUDIANTE_NO_ENCONTRADO')
     idEstudiante = est.rows[0].idestudiante
   } else if (rol === 'Agente') {
-    console.log('Creando ticket para estudiante', idEstudianteParam, 'por agente');
-    // Verificar que el estudiante existe
+    console.log('Creando ticket para estudiante con carnet', carnetEstudiante, 'por agente');
+    // Buscar el estudiante por carnet y obtener idestudiante e idusuario
     const est = await pool.query(
-      `SELECT idestudiante FROM estudiante WHERE idestudiante = $1`, [idEstudianteParam]
+      `SELECT idestudiante, idusuario FROM estudiante WHERE carne = $1`, [carnetEstudiante]
     )
     if (est.rows.length === 0) throw new Error('ESTUDIANTE_NO_ENCONTRADO')
-    idEstudiante = idEstudianteParam
+    idEstudiante = est.rows[0].idestudiante
+    idUsuario = est.rows[0].idusuario
   }
 
   console.log('Estudiante encontrado para usuario', idUsuario, ':', idEstudiante);
@@ -63,7 +64,6 @@ const crearTicket = async ({ tipologiaITIL, descripcion, idUsuario, idEstudiante
           'Prioridad SLA:' + prioridad,
           'Estado:' + 'Abierto',
           'Agente asignado:' + (idAgente ? `Agente ID ${idAgente}` : 'No hay agente disponible para esta tipología')
-
         }
       `);
     console.log('Ticket asignado al agente:', idAgente ? `Agente ID ${idAgente}` : 'No hay agente disponible para esta tipología');
