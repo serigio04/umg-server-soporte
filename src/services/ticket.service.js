@@ -1,12 +1,21 @@
 const { pool } = require('../config/db')
 
+const validarEntero = (valor, nombre) => {
+  const entero = Number(valor)
+  if (!Number.isInteger(entero) || Number.isNaN(entero)) {
+    throw new Error(`${nombre}_INVALIDO`)
+  }
+  return entero
+}
+
 const crearTicket = async ({ tipologiaITIL, descripcion, carnetEstudiante, idUsuario, rol }) => {
   let idEstudiante
   
   if (rol === 'Estudiante') {
-    console.log('Creando ticket para estudiante con usuario', idUsuario);
+    const idUsuarioInt = validarEntero(idUsuario, 'ID_USUARIO')
+    console.log('Creando ticket para estudiante con usuario', idUsuarioInt);
     const est = await pool.query(
-      `SELECT idestudiante FROM estudiante WHERE idusuario = $1`, [idUsuario]
+      `SELECT idestudiante FROM estudiante WHERE idusuario = $1`, [idUsuarioInt]
     )
     if (est.rows.length === 0) throw new Error('ESTUDIANTE_NO_ENCONTRADO')
     idEstudiante = est.rows[0].idestudiante
@@ -79,10 +88,11 @@ const crearTicket = async ({ tipologiaITIL, descripcion, carnetEstudiante, idUsu
 }
 
 const obtenerTicketsEstudiante = async (idUsuario) => {
-  console.log('Usuario', idUsuario);
+  const idUsuarioInt = validarEntero(idUsuario, 'ID_USUARIO')
+  console.log('Usuario', idUsuarioInt);
   
   const est = await pool.query(
-    `SELECT idestudiante FROM estudiante WHERE idusuario = $1`, [idUsuario]
+    `SELECT idestudiante FROM estudiante WHERE idusuario = $1`, [idUsuarioInt]
   )
   if (est.rows.length === 0) throw new Error('ESTUDIANTE_NO_ENCONTRADO')
 
@@ -113,10 +123,11 @@ const obtenerTicketsEstudiante = async (idUsuario) => {
 }
 
 const obtenerUltimoTicket = async (idUsuario) => {
-  console.log('Usuario', idUsuario);
+  const idUsuarioInt = validarEntero(idUsuario, 'ID_USUARIO')
+  console.log('Usuario', idUsuarioInt);
   
   const est = await pool.query(
-    `SELECT idestudiante FROM estudiante WHERE idusuario = $1`, [idUsuario]
+    `SELECT idestudiante FROM estudiante WHERE idusuario = $1`, [idUsuarioInt]
   )
   if (est.rows.length === 0) throw new Error('ESTUDIANTE_NO_ENCONTRADO')
 
@@ -131,14 +142,14 @@ const obtenerUltimoTicket = async (idUsuario) => {
   console.log('Tickets encontrados:', result.rows)
 
   if (result.rows.length === 0) return null
-  const r = result.rows[0]
+  const ultimo = result.rows[0]
   return {
-    idTicket:     r.idticket,
-    fechaCreacion: r.fechacreacion,
-    prioridadSLA: r.prioridadsla,
-    tipologiaITIL: r.tipologiaitil,
-    estado:       r.estado,
-    descripcion:  r.descripcion
+    idTicket:     ultimo.idticket,
+    fechaCreacion: ultimo.fechacreacion,
+    prioridadSLA: ultimo.prioridadsla,
+    tipologiaITIL: ultimo.tipologiaitil,
+    estado:       ultimo.estado,
+    descripcion:  ultimo.descripcion
   }
 }
 

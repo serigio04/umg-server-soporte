@@ -32,6 +32,8 @@ const crearTicket = async (req, res) => {
   } catch (err) {
     if (err.message === 'ESTUDIANTE_NO_ENCONTRADO')
       return res.status(404).json({ message: 'Estudiante no encontrado' })
+    if (err.message === 'ID_USUARIO_INVALIDO')
+      return res.status(400).json({ message: 'ID de usuario inválido' })
     console.error('Error creando ticket:', err)
     res.status(500).json({ message: 'Error interno del servidor' })
   }
@@ -44,6 +46,8 @@ const obtenerMisTickets = async (req, res) => {
   } catch (err) {
     if (err.message === 'ESTUDIANTE_NO_ENCONTRADO')
       return res.status(404).json({ message: 'Estudiante no encontrado' })
+    if (err.message === 'ID_USUARIO_INVALIDO')
+      return res.status(400).json({ message: 'ID de usuario inválido' })
     res.status(500).json({ message: 'Error interno' })
   }
 }
@@ -55,6 +59,8 @@ const obtenerUltimoTicket = async (req, res) => {
   } catch (err) {
     if (err.message === 'ESTUDIANTE_NO_ENCONTRADO')
       return res.status(404).json({ message: 'Estudiante no encontrado' })
+    if (err.message === 'ID_USUARIO_INVALIDO')
+      return res.status(400).json({ message: 'ID de usuario inválido' })
     res.status(500).json({ message: 'Error interno del servidor' })
   }
 }
