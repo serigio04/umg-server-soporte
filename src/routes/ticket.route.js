@@ -3,11 +3,14 @@ const router = express.Router();
 const ticketController = require('../controllers/ticket.controller');
 const { verificarToken, soloRol } = require('../middlewares/auth.middleware');
 
+// Rutas estáticas primero
+router.get('/', verificarToken, soloRol('Estudiante'), ticketController.obtenerMisTickets);
+router.post('/', verificarToken, soloRol('Estudiante', 'Agente'), ticketController.crearTicket);
+router.get('/ultimo', verificarToken, soloRol('Estudiante'), ticketController.obtenerUltimoTicket);
+router.get('/historial/agente', verificarToken, soloRol('Agente', 'Coordinador'), ticketController.obtenerHistorialAgente);
+
+// Rutas dinámicas después
 router.get('/:idTicket', verificarToken, ticketController.obtenerDetalle);
 router.put('/:idTicket/estado', verificarToken, soloRol('Agente', 'Coordinador'), ticketController.cambiarEstado);
-router.get('/', verificarToken, soloRol('Estudiante'), ticketController.obtenerMisTickets);
-router.get('/ultimo', verificarToken, soloRol('Estudiante'), ticketController.obtenerUltimoTicket);
-router.post('/', verificarToken, soloRol('Estudiante', 'Agente'), ticketController.crearTicket);
-router.get('/historial/agente', verificarToken, soloRol('Agente', 'Coordinador'), ticketController.obtenerHistorialAgente);
 
 module.exports = router;

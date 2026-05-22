@@ -154,11 +154,12 @@ const obtenerUltimoTicket = async (idUsuario) => {
 }
 
 const obtenerDetalleTicket = async (idTicket) => {
+  const idTicketInt = validarEntero(idTicket, 'ID_TICKET');
   const ticket = await pool.query(
     `SELECT idticket, fechacreacion, prioridadsla, tipologiaitil, estado, descripcion, idestudiante, idagente
      FROM tickets
      WHERE idticket = $1`,
-    [idTicket]
+    [idTicketInt]
   );
 
   console.log('Ticket obtenido:', ticket.rows);
@@ -171,7 +172,7 @@ const obtenerDetalleTicket = async (idTicket) => {
      FROM estadosticket
      WHERE idticket = $1
      ORDER BY fechacambio DESC`,
-    [idTicket]
+    [idTicketInt]
   );
   
   const horasLimite = t.prioridadsla === 'Alta' ? 4 
@@ -216,35 +217,36 @@ const obtenerDetalleTicket = async (idTicket) => {
 }
 
 const cambiarEstadoTicket = async (idTicket, nuevoEstado, comentario) => {
+  const idTicketInt = validarEntero(idTicket, 'ID_TICKET');
   const estadosValidos = ['Abierto', 'EnProceso', 'Pendiente', 'Resuelto', 'Cerrado'];
   if (!estadosValidos.includes(nuevoEstado)) throw new Error('ESTADO_INVALIDO');
 
   const client = await pool.connect();
   try {
-    console.log(`Cambiando estado del ticket ${idTicket}`);
+    console.log(`Cambiando estado del ticket ${idTicketInt}`);
 
     await client.query('BEGIN');
 
     await client.query(
       `UPDATE tickets SET estado = $1 WHERE idticket = $2`,
-      [nuevoEstado, idTicket]
+      [nuevoEstado, idTicketInt]
     );
 
-    console.log(`Estado del ticket ${idTicket} actualizado a ${nuevoEstado}`);
+    console.log(`Estado del ticket ${idTicketInt} actualizado a ${nuevoEstado}`);
 
     await client.query(
       `INSERT INTO estadosticket (nombreestado, fechacambio, comentariotecnico, idticket)
        VALUES ($1, NOW(), $2, $3)`,
-      [nuevoEstado, comentario, idTicket]
+      [nuevoEstado, comentario, idTicketInt]
     );
 
-    console.log(`Historial del ticket ${idTicket} actualizado`);
+    console.log(`Historial del ticket ${idTicketInt} actualizado`);
 
     await client.query('COMMIT');
-    return { idTicket, nuevoEstado };
+    return { idTicket: idTicketInt, nuevoEstado };
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error(`Error al cambiar el estado del ticket ${idTicket}:`, err, 'Realizando ROLLBACK');
+    console.error(`Error al cambiar el estado del ticket ${idTicketInt}:`, err, 'Realizando ROLLBACK');
     throw err;
   } finally {
     client.release();
