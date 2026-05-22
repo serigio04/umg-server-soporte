@@ -29,29 +29,35 @@ const obtenerTicketPrioridad = async (idAgente) => {
   console.log('Obteniendo ticket de prioridad para agente', idAgente);
 
   const result = await pool.query(
-    `SELECT idticket, fechacreacion, prioridadsla, tipologiaitil, estado, descripcion
-     FROM tickets
-     WHERE idagente = $1 AND estado = 'Abierto'
+    `SELECT t.idticket, t.fechacreacion, t.prioridadsla, t.tipologiaitil, t.estado, t.descripcion, t.idestudiante, e.idestudiante, e.carne
+     FROM tickets t
+     INNER JOIN estudiante e ON e.idestudiante = t.idestudiante
+     WHERE t.idagente = $1 AND t.estado = 'Abierto'
      ORDER BY
        CASE
-         WHEN prioridadsla = 'Alta'  THEN 1
-         WHEN prioridadsla = 'Media' THEN 2
-         WHEN prioridadsla = 'Baja'  THEN 3
+         WHEN t.prioridadsla = 'Alta'  THEN 1
+         WHEN t.prioridadsla = 'Media' THEN 2
+         WHEN t.prioridadsla = 'Baja'  THEN 3
          ELSE 4
        END ASC,
-       fechacreacion ASC
+       t.fechacreacion ASC
      LIMIT 1`,
     [idAgente]
-  )
-  if (result.rows.length === 0) return null
-  const r = result.rows[0]
+  );
+
+  console.log('Ticket de prioridad encontrado:', result.rows);
+
+  if (result.rows.length === 0) return null;
+  const ticket = result.rows[0];
+
   return {
-    idTicket:     r.idticket,
-    fechaCreacion: r.fechacreacion,
-    prioridadSLA: r.prioridadsla,
-    tipologiaITIL: r.tipologiaitil,
-    estado:       r.estado,
-    descripcion:  r.descripcion
+    idTicket:     ticket.idticket,
+    fechaCreacion: ticket.fechacreacion,
+    prioridadSLA: ticket.prioridadsla,
+    tipologiaITIL: ticket.tipologiaitil,
+    estado:       ticket.estado,
+    descripcion:  ticket.descripcion,
+    carne:        ticket.carne
   }
 }
 
