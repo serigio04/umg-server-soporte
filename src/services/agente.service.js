@@ -13,14 +13,14 @@ const obtenerPerfilAgente = async (idUsuario) => {
   if (result.rows.length === 0) throw new Error('AGENTE_NO_ENCONTRADO')
   const r = result.rows[0]
   return {
-    idAgente:            r.IdAgente,
-    especialidad:        r.Especialidad,
-    nivelAcceso:         r.NivelAcceso,
-    sedeAsignada:        r.SedeAsignada,
-    nombreCompleto:      r.NombreCompleto,
-    correoInstitucional: r.CorreoInstitucional,
-    rol:                 r.Rol,
-    esGerencial:         r.NivelAcceso >= 3
+    idAgente:            r.IdAgente || r.idagente,
+    especialidad:        r.Especialidad || r.especialidad,
+    nivelAcceso:         r.NivelAcceso || r.nivelacceso,
+    sedeAsignada:        r.SedeAsignada || r.sedeasignada,
+    nombreCompleto:      r.NombreCompleto || r.nombrecompleto,
+    correoInstitucional: r.CorreoInstitucional || r.correoinstitucional,
+    rol:                 r.Rol || r.rol,
+    esGerencial:         (r.NivelAcceso || r.nivelacceso) >= 3
   }
 }
 
@@ -44,12 +44,12 @@ const obtenerTicketPrioridad = async (idAgente) => {
   if (result.rows.length === 0) return null
   const r = result.rows[0]
   return {
-    idTicket:     r.IdTicket,
-    fechaCreacion: r.FechaCreacion,
-    prioridadSLA: r.PrioridadSLA,
-    tipologiaITIL: r.TipologiaITIL,
-    estado:       r.Estado,
-    descripcion:  r.Descripcion
+    idTicket:     r.IdTicket || r.idticket,
+    fechaCreacion: r.FechaCreacion || r.fechacreacion,
+    prioridadSLA: r.PrioridadSLA || r.prioridadsla,
+    tipologiaITIL: r.TipologiaITIL || r.tipologiaitil,
+    estado:       r.Estado || r.estado,
+    descripcion:  r.Descripcion || r.descripcion
   }
 }
 
@@ -63,12 +63,12 @@ const obtenerTicketsAsignados = async (idAgente) => {
   )
 
   return result.rows.map(r => ({
-    idTicket:     r.IdTicket,
-    fechaCreacion: r.FechaCreacion,
-    prioridadSLA: r.PrioridadSLA,
-    tipologiaITIL: r.TipologiaITIL,
-    estado:       r.Estado,
-    descripcion:  r.Descripcion
+    idTicket:     r.IdTicket || r.idticket,
+    fechaCreacion: r.FechaCreacion || r.fechacreacion,
+    prioridadSLA: r.PrioridadSLA || r.prioridadsla,
+    tipologiaITIL: r.TipologiaITIL || r.tipologiaitil,
+    estado:       r.Estado || r.estado,
+    descripcion:  r.Descripcion || r.descripcion
   }))
 }
 
