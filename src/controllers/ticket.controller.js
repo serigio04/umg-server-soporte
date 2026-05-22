@@ -59,4 +59,35 @@ const obtenerUltimoTicket = async (req, res) => {
   }
 }
 
-module.exports = { crearTicket, obtenerMisTickets, obtenerUltimoTicket }
+const obtenerDetalle = async (req, res) => {
+  const { idTicket } = req.params
+  
+  try {
+    const ticket = await ticketService.obtenerDetalleTicket(idTicket);
+    res.status(200).json(ticket);
+  } catch (err) {
+    if (err.message === 'TICKET_NO_ENCONTRADO')
+      return res.status(404).json({ message: 'Ticket no encontrado' });
+    console.error('Error:', err);
+    res.status(500).json({ message: 'Error interno' });
+  }
+};
+
+const cambiarEstado = async (req, res) => {
+  const { idTicket } = req.params;
+  const { nuevoEstado, comentario } = req.body;
+  
+  if (!nuevoEstado) return res.status(400).json({ message: 'Estado requerido' });
+  
+  try {
+    const resultado = await ticketService.cambiarEstadoTicket(idTicket, nuevoEstado, comentario || '');
+    res.json(resultado);
+  } catch (err) {
+    if (err.message === 'ESTADO_INVALIDO');
+      return res.status(400).json({ message: 'Estado inválido' });
+    console.error('Error:', err);
+    res.status(500).json({ message: 'Error interno' });
+  }
+};
+
+module.exports = { crearTicket, obtenerMisTickets, obtenerUltimoTicket, obtenerDetalle, cambiarEstado }
