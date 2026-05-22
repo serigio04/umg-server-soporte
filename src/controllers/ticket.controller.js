@@ -1,4 +1,5 @@
 const ticketService = require('../services/ticket.service')
+const { pool } = require('../config/db')
 
 // ─── crearTicket ─────────────────────────────────────────────────────────────
 const crearTicket = async (req, res) => {
@@ -12,7 +13,6 @@ const crearTicket = async (req, res) => {
 
     // Si es Estudiante, obtenemos su carnet automáticamente
     if (req.usuario.rol === 'Estudiante') {
-      const { pool } = require('../config/db')
       const est = await pool.query(
         `SELECT carne FROM estudiante WHERE idusuario = $1 LIMIT 1`,
         [req.usuario.idUsuario]

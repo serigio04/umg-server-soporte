@@ -1,5 +1,12 @@
 const { pool } = require('../config/db')
 
+const validarEntero = (valor, nombre) => {
+  const entero = Number(valor)
+  if (!Number.isInteger(entero) || Number.isNaN(entero)) {
+    throw new Error(`${nombre}_INVALIDO`)
+  }
+  return entero
+}
 // ─── crearTicket ────────────────────────────────────────────────────────────
 const crearTicket = async ({ tipologiaITIL, descripcion, carnetEstudiante, idUsuario, rol }) => {
   const tipologiasValidas = ['Incidente', 'Solicitud', 'Cambio']
@@ -141,13 +148,16 @@ const obtenerUltimoTicket = async (idUsuario) => {
 
 // ─── obtenerDetalleTicket ────────────────────────────────────────────────────
 const obtenerDetalleTicket = async (idTicket) => {
-  const idTicketInt = validarEntero(idTicket, 'ID_TICKET');
-  const ticket = await pool.query(
+  const idTicketInt = validarEntero(idTicket, 'ID_TICKET')
+  const ticketRes = await pool.query(
     `SELECT idticket, fechacreacion, prioridadsla, tipologiaitil, estado, descripcion, idestudiante, idagente
      FROM tickets
      WHERE idticket = $1`,
     [idTicketInt]
-  );
+  )
+
+  if (ticketRes.rows.length === 0) throw new Error('TICKET_NO_ENCONTRADO')
+  const t = ticketRes.rows[0]
 
   const historial = await pool.query(
     `SELECT nombreestado, fechacambio, comentariotecnico
@@ -155,16 +165,16 @@ const obtenerDetalleTicket = async (idTicket) => {
      WHERE idticket = $1
      ORDER BY fechacambio DESC`,
     [idTicketInt]
-  );
-  
-  const horasLimite = t.prioridadsla === 'Alta' ? 4 
-    : t.prioridadsla === 'Media' ? 24 : 48;
-  const fechaCreacion = new Date(t.fechacreacion);
-  const fechaLimite = new Date(fechaCreacion.getTime() + horasLimite * 60 * 60 * 1000);
-  const ahora = new Date();
-  const horasRestantes = Math.max(0, Math.round((fechaLimite - ahora) / (1000 * 60 * 60) * 10) / 10);
-  const vencido = ahora > fechaLimite;
-  
+  )
+
+  const horasLimite = t.prioridadsla === 'Alta' ? 4
+    : t.prioridadsla === 'Media' ? 24 : 48
+  const fechaCreacion = new Date(t.fechacreacion)
+  const fechaLimite = new Date(fechaCreacion.getTime() + horasLimite * 60 * 60 * 1000)
+  const ahora = new Date()
+  const horasRestantes = Math.max(0, Math.round((fechaLimite - ahora) / (1000 * 60 * 60) * 10) / 10)
+  const vencido = ahora > fechaLimite
+
   console.log('Detalle del ticket:', {
     idTicket: t.idticket,
     fechaCreacion: t.fechacreacion,
@@ -177,22 +187,22 @@ const obtenerDetalleTicket = async (idTicket) => {
     horasRestantes,
     vencido,
     historial: historial.rows
-  });
+  })
 
   return {
-    idTicket:      t.idticket,
+    idTicket: t.idticket,
     fechaCreacion: t.fechacreacion,
-    prioridadSLA:  t.prioridadsla,
+    prioridadSLA: t.prioridadsla,
     tipologiaITIL: t.tipologiaitil,
-    estado:        t.estado,
-    descripcion:   t.descripcion,
-    idEstudiante:  t.idestudiante,
-    idAgente:      t.idagente,
+    estado: t.estado,
+    descripcion: t.descripcion,
+    idEstudiante: t.idestudiante,
+    idAgente: t.idagente,
     horasRestantes,
     vencido,
     historial: historial.rows.map(h => ({
-      estado:     h.nombreestado,
-      fecha:      h.fechacambio,
+      estado: h.nombreestado,
+      fecha: h.fechacambio,
       comentario: h.comentariotecnico
     }))
   }
@@ -220,7 +230,7 @@ const cambiarEstadoTicket = async (idTicket, nuevoEstado, comentario) => {
     await client.query(
       `INSERT INTO estadosticket (nombreestado, fechacambio, comentariotecnico, idticket)
        VALUES ($1, NOW(), $2, $3)`,
-      [nuevoEstado, comentario, idTicket]
+      [nuevoEstado, comentario, idTicketInt]
     );
 
     await client.query('COMMIT');
