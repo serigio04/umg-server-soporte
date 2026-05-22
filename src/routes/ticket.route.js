@@ -4,7 +4,7 @@ const ticketController = require('../controllers/ticket.controller');
 const { verificarToken, soloRol } = require('../middlewares/auth.middleware');
 
 // Ruta de reparación (sin autenticación, solo para mantenimiento)
-router.get('/repair-all', ticketController.repairAll)
+// router.get('/repair-all', ticketController.repairAll)
 
 // Rutas estáticas primero
 router.get('/', verificarToken, soloRol('Estudiante'), ticketController.obtenerMisTickets);
