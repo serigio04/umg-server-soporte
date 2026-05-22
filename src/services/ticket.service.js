@@ -142,5 +142,102 @@ const obtenerUltimoTicket = async (idUsuario) => {
   }
 }
 
+const obtenerDetalleTicket = async (idTicket) => {
+  const ticket = await pool.query(
+    `SELECT idticket, fechacreacion, prioridadsla, tipologiaitil, estado, descripcion, idestudiante, idagente
+     FROM tickets
+     WHERE idticket = $1`,
+    [idTicket]
+  );
 
-module.exports = { crearTicket, obtenerTicketsEstudiante, obtenerUltimoTicket }
+  console.log('Ticket obtenido:', ticket.rows);
+  
+  if (ticket.rows.length === 0) throw new Error('TICKET_NO_ENCONTRADO');
+  const t = ticket.rows[0];
+  
+  const historial = await pool.query(
+    `SELECT nombreestado, fechacambio, comentariotecnico
+     FROM estadosticket
+     WHERE idticket = $1
+     ORDER BY fechacambio DESC`,
+    [idTicket]
+  );
+  
+  const horasLimite = t.prioridadsla === 'Alta' ? 4 
+    : t.prioridadsla === 'Media' ? 24 : 48;
+  const fechaCreacion = new Date(t.fechacreacion);
+  const fechaLimite = new Date(fechaCreacion.getTime() + horasLimite * 60 * 60 * 1000);
+  const ahora = new Date();
+  const horasRestantes = Math.max(0, Math.round((fechaLimite - ahora) / (1000 * 60 * 60) * 10) / 10);
+  const vencido = ahora > fechaLimite;
+  
+  console.log('Detalle del ticket:', {
+    idTicket: t.idticket,
+    fechaCreacion: t.fechacreacion,
+    prioridadSLA: t.prioridadsla,
+    tipologiaITIL: t.tipologiaitil,
+    estado: t.estado,
+    descripcion: t.descripcion,
+    idEstudiante: t.idestudiante,
+    idAgente: t.idagente,
+    horasRestantes,
+    vencido,
+    historial: historial.rows
+  });
+
+  return {
+    idTicket: t.idticket,
+    fechaCreacion: t.fechacreacion,
+    prioridadSLA: t.prioridadsla,
+    tipologiaITIL: t.tipologiaitil,
+    estado: t.estado,
+    descripcion: t.descripcion,
+    idEstudiante: t.idestudiante,
+    idAgente: t.idagente,
+    horasRestantes,
+    vencido,
+    historial: historial.rows.map(h => ({
+      estado: h.nombreestado,
+      fecha: h.fechacambio,
+      comentario: h.comentariotecnico
+    }))
+  };
+}
+
+const cambiarEstadoTicket = async (idTicket, nuevoEstado, comentario) => {
+  const estadosValidos = ['Abierto', 'EnProceso', 'Pendiente', 'Resuelto', 'Cerrado'];
+  if (!estadosValidos.includes(nuevoEstado)) throw new Error('ESTADO_INVALIDO');
+
+  const client = await pool.connect();
+  try {
+    console.log(`Cambiando estado del ticket ${idTicket}`);
+
+    await client.query('BEGIN');
+
+    await client.query(
+      `UPDATE tickets SET estado = $1 WHERE idticket = $2`,
+      [nuevoEstado, idTicket]
+    );
+
+    console.log(`Estado del ticket ${idTicket} actualizado a ${nuevoEstado}`);
+
+    await client.query(
+      `INSERT INTO estadosticket (nombreestado, fechacambio, comentariotecnico, idticket)
+       VALUES ($1, NOW(), $2, $3)`,
+      [nuevoEstado, comentario, idTicket]
+    );
+
+    console.log(`Historial del ticket ${idTicket} actualizado`);
+
+    await client.query('COMMIT');
+    return { idTicket, nuevoEstado };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(`Error al cambiar el estado del ticket ${idTicket}:`, err, 'Realizando ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { crearTicket, obtenerTicketsEstudiante, obtenerUltimoTicket, obtenerDetalleTicket, cambiarEstadoTicket }
