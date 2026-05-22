@@ -14,14 +14,14 @@ const obtenerPerfilAgente = async (idUsuario) => {
   if (result.rows.length === 0) throw new Error('AGENTE_NO_ENCONTRADO')
   const r = result.rows[0]
   return {
-    idAgente:            r.idagente,
-    especialidad:        r.especialidad,
-    nivelAcceso:         r.nivelacceso,
-    sedeAsignada:        r.sedeAsignada,
-    nombreCompleto:      r.nombrecompleto,
-    correoInstitucional: r.correoinstitucional,
-    rol:                 r.rol,
-    esGerencial:         r.nivelacceso >= 3
+    idAgente:            r.IdAgente || r.idagente,
+    especialidad:        r.Especialidad || r.especialidad,
+    nivelAcceso:         r.NivelAcceso || r.nivelacceso,
+    sedeAsignada:        r.SedeAsignada || r.sedeasignada,
+    nombreCompleto:      r.NombreCompleto || r.nombrecompleto,
+    correoInstitucional: r.CorreoInstitucional || r.correoinstitucional,
+    rol:                 r.Rol || r.rol,
+    esGerencial:         (r.NivelAcceso || r.nivelacceso) >= 3
   }
 }
 
@@ -51,6 +51,12 @@ const obtenerTicketPrioridad = async (idAgente) => {
   const ticket = result.rows[0];
 
   return {
+    idTicket:     r.IdTicket || r.idticket,
+    fechaCreacion: r.FechaCreacion || r.fechacreacion,
+    prioridadSLA: r.PrioridadSLA || r.prioridadsla,
+    tipologiaITIL: r.TipologiaITIL || r.tipologiaitil,
+    estado:       r.Estado || r.estado,
+    descripcion:  r.Descripcion || r.descripcion
     idTicket:     ticket.idticket,
     fechaCreacion: ticket.fechacreacion,
     prioridadSLA: ticket.prioridadsla,
@@ -72,12 +78,12 @@ const obtenerTicketsAsignados = async (idAgente) => {
     [idAgente]
   )
   return result.rows.map(r => ({
-    idTicket:     r.idticket,
-    fechaCreacion: r.fechacreacion,
-    prioridadSLA: r.prioridadsla,
-    tipologiaITIL: r.tipologiaitil,
-    estado:       r.estado,
-    descripcion:  r.descripcion
+    idTicket:     r.IdTicket || r.idticket,
+    fechaCreacion: r.FechaCreacion || r.fechacreacion,
+    prioridadSLA: r.PrioridadSLA || r.prioridadsla,
+    tipologiaITIL: r.TipologiaITIL || r.tipologiaitil,
+    estado:       r.Estado || r.estado,
+    descripcion:  r.Descripcion || r.descripcion
   }))
 }
 

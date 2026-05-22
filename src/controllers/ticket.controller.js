@@ -65,6 +65,21 @@ const obtenerUltimoTicket = async (req, res) => {
   }
 }
 
+const repairAll = async (req, res) => {
+  try {
+    const report = await ticketService.repairDatabase()
+    res.json({
+      status: 'success',
+      message: 'Base de datos reparada con éxito. Todos los tickets existentes han sido vinculados correctamente.',
+      details: report
+    })
+  } catch (err) {
+    console.error('Error reparando base de datos:', err)
+    res.status(500).json({ status: 'error', message: 'Error interno del servidor al reparar la base de datos' })
+  }
+}
+
+module.exports = { crearTicket, obtenerMisTickets, obtenerUltimoTicket, repairAll }
 const obtenerDetalle = async (req, res) => {
   const { idTicket } = req.params
   
