@@ -266,4 +266,48 @@ const obtenerHistorialTicketsAgente = async (idAgente) => {
   }));
 };
 
-module.exports = { crearTicket, obtenerTicketsEstudiante, obtenerUltimoTicket, obtenerDetalleTicket, cambiarEstadoTicket, obtenerHistorialTicketsAgente }
+  const escalarTicket = async (idTicket, idAgenteActual) => {
+    const coordinador = await pool.query(
+      `SELECT a.idagente FROM agentes a
+      JOIN usuarios u ON u.idusuario = a.idusuario
+      WHERE u.rol = 'Coordinador' LIMIT 1`
+    )
+    
+    if (coordinador.rows.length === 0) throw new Error('COORDINADOR_NO_ENCONTRADO')
+    
+    const idCoordinador = coordinador.rows[0].idagente
+    
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+
+      await client.query(
+        `UPDATE tickets SET idagente = $1 WHERE idticket = $2`,
+        [idCoordinador, idTicket]
+      )
+
+      await client.query(
+        `INSERT INTO estadosticket (nombreestado, fechacambio, comentariotecnico, idticket)
+        VALUES ($1, NOW(), $2, $3)`,
+        ['Escalado', `Ticket escalado al coordinador por agente ${idAgenteActual}`, idTicket]
+      )
+
+      await client.query('COMMIT')
+      return { idTicket, nuevoAgente: idCoordinador, estado: 'Escalado' }
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
+    } finally {
+      client.release()
+    }
+  }
+
+module.exports = { 
+  crearTicket, 
+  obtenerTicketsEstudiante, 
+  obtenerUltimoTicket, 
+  obtenerDetalleTicket, 
+  cambiarEstadoTicket,
+  escalarTicket,
+  obtenerHistorialTicketsAgente
+}

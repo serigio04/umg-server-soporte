@@ -120,4 +120,33 @@ const obtenerHistorialAgente = async (req, res) => {
   };
 };
 
-module.exports = { crearTicket, obtenerMisTickets, obtenerUltimoTicket, obtenerDetalle, cambiarEstado, obtenerHistorialAgente }
+const escalarTicket = async (req, res) => {
+  const { idTicket } = req.params
+  
+  try {
+    const agente = await pool.query(
+      `SELECT idagente FROM agentes WHERE idusuario = $1`,
+      [req.usuario.idUsuario]
+    )
+    if (agente.rows.length === 0)
+      return res.status(404).json({ message: 'Agente no encontrado' })
+    
+    const resultado = await ticketService.escalarTicket(idTicket, agente.rows[0].idagente)
+    res.json(resultado)
+  } catch (err) {
+    if (err.message === 'COORDINADOR_NO_ENCONTRADO')
+      return res.status(404).json({ message: 'No hay coordinador disponible' })
+    console.error('Error:', err)
+    res.status(500).json({ message: 'Error interno' })
+  }
+};
+
+module.exports = { 
+  crearTicket, 
+  obtenerMisTickets, 
+  obtenerUltimoTicket, 
+  obtenerDetalle, 
+  cambiarEstado,
+  escalarTicket,
+  obtenerHistorialAgente
+}
