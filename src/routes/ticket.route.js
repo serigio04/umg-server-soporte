@@ -7,5 +7,10 @@ router.get('/repair-all', ticketController.repairAll)
 router.get('/', verificarToken, soloRol('Estudiante'), ticketController.obtenerMisTickets)
 router.get('/ultimo', verificarToken, soloRol('Estudiante'), ticketController.obtenerUltimoTicket)
 router.post('/', verificarToken, soloRol('Estudiante'), ticketController.crearTicket)
+router.get('/:idTicket', verificarToken, ticketController.obtenerDetalle);
+router.put('/:idTicket/estado', verificarToken, soloRol('Agente', 'Coordinador'), ticketController.cambiarEstado);
+router.get('/', verificarToken, soloRol('Estudiante'), ticketController.obtenerMisTickets);
+router.get('/ultimo', verificarToken, soloRol('Estudiante'), ticketController.obtenerUltimoTicket);
+router.post('/', verificarToken, soloRol('Estudiante', 'Agente'), ticketController.crearTicket);
 
 module.exports = router;

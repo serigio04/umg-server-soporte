@@ -1,15 +1,16 @@
 const { pool } = require('../config/db')
 
 const obtenerPerfilAgente = async (idUsuario) => {
+  console.log('Obteniendo perfil para usuario', idUsuario);
+
   const result = await pool.query(
-    `SELECT a.IdAgente, a.Especialidad, a.NivelAcceso, a.SedeAsignada,
-            u.NombreCompleto, u.CorreoInstitucional, u.Rol
-     FROM Agentes a
-     JOIN Usuarios u ON u.IdUsuario = a.IdUsuario
-     WHERE a.IdUsuario = $1`,
+    `SELECT a.idagente, a.especialidad, a.nivelacceso, a.sedeAsignada,
+            u.nombrecompleto, u.correoinstitucional, u.rol
+     FROM agentes a
+     JOIN usuarios u ON u.idusuario = a.idusuario
+     WHERE a.idusuario = $1`,
     [idUsuario]
   )
-
   if (result.rows.length === 0) throw new Error('AGENTE_NO_ENCONTRADO')
   const r = result.rows[0]
   return {
@@ -25,24 +26,30 @@ const obtenerPerfilAgente = async (idUsuario) => {
 }
 
 const obtenerTicketPrioridad = async (idAgente) => {
+  console.log('Obteniendo ticket de prioridad para agente', idAgente);
+
   const result = await pool.query(
-    `SELECT IdTicket, FechaCreacion, PrioridadSLA, TipologiaITIL, Estado, Descripcion
-     FROM Tickets
-     WHERE IdAgente = $1 AND Estado = 'Abierto'
+    `SELECT t.idticket, t.fechacreacion, t.prioridadsla, t.tipologiaitil, t.estado, t.descripcion, t.idestudiante, e.idestudiante, e.carne
+     FROM tickets t
+     INNER JOIN estudiante e ON e.idestudiante = t.idestudiante
+     WHERE t.idagente = $1 AND t.estado = 'Abierto'
      ORDER BY
        CASE
-         WHEN PrioridadSLA = 'Alta'  THEN 1
-         WHEN PrioridadSLA = 'Media' THEN 2
-         WHEN PrioridadSLA = 'Baja'  THEN 3
+         WHEN t.prioridadsla = 'Alta'  THEN 1
+         WHEN t.prioridadsla = 'Media' THEN 2
+         WHEN t.prioridadsla = 'Baja'  THEN 3
          ELSE 4
        END ASC,
-       FechaCreacion ASC
+       t.fechacreacion ASC
      LIMIT 1`,
     [idAgente]
-  )
+  );
 
-  if (result.rows.length === 0) return null
-  const r = result.rows[0]
+  console.log('Ticket de prioridad encontrado:', result.rows);
+
+  if (result.rows.length === 0) return null;
+  const ticket = result.rows[0];
+
   return {
     idTicket:     r.IdTicket || r.idticket,
     fechaCreacion: r.FechaCreacion || r.fechacreacion,
@@ -50,18 +57,26 @@ const obtenerTicketPrioridad = async (idAgente) => {
     tipologiaITIL: r.TipologiaITIL || r.tipologiaitil,
     estado:       r.Estado || r.estado,
     descripcion:  r.Descripcion || r.descripcion
+    idTicket:     ticket.idticket,
+    fechaCreacion: ticket.fechacreacion,
+    prioridadSLA: ticket.prioridadsla,
+    tipologiaITIL: ticket.tipologiaitil,
+    estado:       ticket.estado,
+    descripcion:  ticket.descripcion,
+    carne:        ticket.carne
   }
 }
 
 const obtenerTicketsAsignados = async (idAgente) => {
+  console.log('Obteniendo tickets asignados para agente', idAgente);
+
   const result = await pool.query(
-    `SELECT IdTicket, FechaCreacion, PrioridadSLA, TipologiaITIL, Estado, Descripcion
-     FROM Tickets
-     WHERE IdAgente = $1
-     ORDER BY FechaCreacion DESC`,
+    `SELECT idticket, fechacreacion, prioridadsla, tipologiaitil, estado, descripcion
+     FROM tickets
+     WHERE idagente = $1
+     ORDER BY fechacreacion DESC`,
     [idAgente]
   )
-
   return result.rows.map(r => ({
     idTicket:     r.IdTicket || r.idticket,
     fechaCreacion: r.FechaCreacion || r.fechacreacion,
