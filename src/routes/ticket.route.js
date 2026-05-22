@@ -8,5 +8,6 @@ router.put('/:idTicket/estado', verificarToken, soloRol('Agente', 'Coordinador')
 router.get('/', verificarToken, soloRol('Estudiante'), ticketController.obtenerMisTickets);
 router.get('/ultimo', verificarToken, soloRol('Estudiante'), ticketController.obtenerUltimoTicket);
 router.post('/', verificarToken, soloRol('Estudiante', 'Agente'), ticketController.crearTicket);
+router.get('/historial/agente', verificarToken, soloRol('Agente', 'Coordinador'), ticketController.obtenerHistorialAgente);
 
 module.exports = router;

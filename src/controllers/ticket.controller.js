@@ -96,4 +96,21 @@ const cambiarEstado = async (req, res) => {
   }
 };
 
-module.exports = { crearTicket, obtenerMisTickets, obtenerUltimoTicket, obtenerDetalle, cambiarEstado }
+const obtenerHistorialAgente = async (req, res) => {
+  try {
+    const agente = await pool.query(
+      `SELECT idagente FROM agentes WHERE idusuario = $1`,
+      [req.usuario.idUsuario]
+    );
+    if (agente.rows.length === 0)
+      return res.status(404).json({ message: 'Agente no encontrado' });
+    
+    const historial = await ticketService.obtenerHistorialTicketsAgente(agente.rows[0].idagente);
+    res.json(historial);
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ message: 'Error interno' });
+  };
+};
+
+module.exports = { crearTicket, obtenerMisTickets, obtenerUltimoTicket, obtenerDetalle, cambiarEstado, obtenerHistorialAgente }

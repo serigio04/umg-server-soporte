@@ -249,6 +249,25 @@ const cambiarEstadoTicket = async (idTicket, nuevoEstado, comentario) => {
   } finally {
     client.release();
   }
-}
+};
 
-module.exports = { crearTicket, obtenerTicketsEstudiante, obtenerUltimoTicket, obtenerDetalleTicket, cambiarEstadoTicket }
+const obtenerHistorialTicketsAgente = async (idAgente) => {
+  const result = await pool.query(
+    `SELECT idticket, fechacreacion, prioridadsla, tipologiaitil, estado, descripcion
+     FROM tickets
+     WHERE idagente = $1 AND estado != 'Abierto'
+     ORDER BY fechacreacion DESC`,
+    [idAgente]
+  );
+  
+  return result.rows.map(t => ({
+    idTicket: t.idticket,
+    fechaCreacion: t.fechacreacion,
+    prioridadSLA: t.prioridadsla,
+    tipologiaITIL: t.tipologiaitil,
+    estado: t.estado,
+    descripcion: t.descripcion
+  }));
+};
+
+module.exports = { crearTicket, obtenerTicketsEstudiante, obtenerUltimoTicket, obtenerDetalleTicket, cambiarEstadoTicket, obtenerHistorialTicketsAgente }
