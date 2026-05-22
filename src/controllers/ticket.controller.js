@@ -120,4 +120,4 @@ const obtenerHistorialAgente = async (req, res) => {
   };
 };
 
-module.exports = { crearTicket, obtenerMisTickets, obtenerUltimoTicket, obtenerDetalle, cambiarEstado, obtenerHistorialAgente, repairAll }
+module.exports = { crearTicket, obtenerMisTickets, obtenerUltimoTicket, obtenerDetalle, cambiarEstado, obtenerHistorialAgente }
