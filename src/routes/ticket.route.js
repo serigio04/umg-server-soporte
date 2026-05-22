@@ -8,7 +8,7 @@ router.get('/repair-all', ticketController.repairAll)
 
 // Rutas estáticas primero
 router.get('/', verificarToken, soloRol('Estudiante'), ticketController.obtenerMisTickets);
-router.post('/', verificarToken, soloRol('Estudiante', 'Agente'), ticketController.crearTicket);
+router.post('/', verificarToken, soloRol('Estudiante', 'Agente', 'Coordinador'), ticketController.crearTicket);
 router.get('/ultimo', verificarToken, soloRol('Estudiante'), ticketController.obtenerUltimoTicket);
 router.get('/historial/agente', verificarToken, soloRol('Agente', 'Coordinador'), ticketController.obtenerHistorialAgente);
 
