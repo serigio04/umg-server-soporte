@@ -15,5 +15,7 @@ router.get('/historial/agente', verificarToken, soloRol('Agente', 'Coordinador')
 // Rutas dinámicas después
 router.get('/:idTicket', verificarToken, ticketController.obtenerDetalle);
 router.put('/:idTicket/estado', verificarToken, soloRol('Agente', 'Coordinador'), ticketController.cambiarEstado);
+router.put('/:idTicket/aceptar', verificarToken, soloRol('Estudiante'), ticketController.aceptarResolucion);
+router.put('/:idTicket/escalar', verificarToken, soloRol('Agente'), ticketController.escalar);
 
 module.exports = router;

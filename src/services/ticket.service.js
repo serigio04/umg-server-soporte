@@ -150,9 +150,12 @@ const obtenerUltimoTicket = async (idUsuario) => {
 const obtenerDetalleTicket = async (idTicket) => {
   const idTicketInt = validarEntero(idTicket, 'ID_TICKET')
   const ticketRes = await pool.query(
-    `SELECT idticket, fechacreacion, prioridadsla, tipologiaitil, estado, descripcion, idestudiante, idagente
-     FROM tickets
-     WHERE idticket = $1`,
+    `SELECT t.idticket, t.fechacreacion, t.prioridadsla, t.tipologiaitil, t.estado, t.descripcion, t.idestudiante, t.idagente,
+            e.carne, u.nombrecompleto as nombreestudiante
+     FROM tickets t
+     LEFT JOIN estudiante e ON t.idestudiante = e.idestudiante
+     LEFT JOIN usuarios u ON e.idusuario = u.idusuario
+     WHERE t.idticket = $1`,
     [idTicketInt]
   )
 
@@ -197,6 +200,8 @@ const obtenerDetalleTicket = async (idTicket) => {
     estado: t.estado,
     descripcion: t.descripcion,
     idEstudiante: t.idestudiante,
+    carneEstudiante: t.carne,
+    nombreEstudiante: t.nombreestudiante,
     idAgente: t.idagente,
     horasRestantes,
     vencido,
@@ -358,4 +363,82 @@ const obtenerHistorialTicketsAgente = async (idAgente) => {
   }));
 };
 
-module.exports = { crearTicket, obtenerTicketsEstudiante, obtenerUltimoTicket, obtenerDetalleTicket, cambiarEstadoTicket, obtenerHistorialTicketsAgente, repairDatabase }
+// ─── escalarTicket ─────────────────────────────────────────────────────────────
+const escalarTicket = async (idTicket) => {
+  const idTicketInt = validarEntero(idTicket, 'ID_TICKET');
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Buscar ID del coordinador
+    const coordRes = await client.query(
+      `SELECT a.idagente 
+       FROM agentes a 
+       JOIN usuarios u ON a.idusuario = u.idusuario 
+       WHERE u.rol = 'Coordinador' 
+       LIMIT 1`
+    );
+
+    if (coordRes.rows.length === 0) throw new Error('COORDINADOR_NO_ENCONTRADO');
+    const idCoordinador = coordRes.rows[0].idagente;
+
+    // Actualizar ticket: asignar a coordinador y pasar a Abierto si no lo estaba
+    await client.query(
+      `UPDATE tickets SET idagente = $1, estado = 'Abierto' WHERE idticket = $2`,
+      [idCoordinador, idTicketInt]
+    );
+
+    // Registrar historial
+    await client.query(
+      `INSERT INTO estadosticket (nombreestado, fechacambio, comentariotecnico, idticket)
+       VALUES ('Abierto', NOW(), 'Ticket escalado al Coordinador', $1)`,
+      [idTicketInt]
+    );
+
+    await client.query('COMMIT');
+    return { idTicket: idTicketInt, idCoordinador };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+// ─── aceptarResolucion ───────────────────────────────────────────────────────
+const aceptarResolucion = async (idTicket, idUsuario) => {
+  const idTicketInt = validarEntero(idTicket, 'ID_TICKET');
+
+  // Verificar que el ticket pertenece a este estudiante y está en Resuelto
+  const ticketRes = await pool.query(
+    `SELECT t.idticket, t.estado
+     FROM tickets t
+     JOIN estudiante e ON t.idestudiante = e.idestudiante
+     WHERE t.idticket = $1 AND e.idusuario = $2`,
+    [idTicketInt, idUsuario]
+  );
+
+  if (ticketRes.rows.length === 0) throw new Error('TICKET_NO_ENCONTRADO');
+  if (ticketRes.rows[0].estado !== 'Resuelto') throw new Error('TICKET_NO_RESUELTO');
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`UPDATE tickets SET estado = 'Cerrado' WHERE idticket = $1`, [idTicketInt]);
+    await client.query(
+      `INSERT INTO estadosticket (nombreestado, fechacambio, comentariotecnico, idticket)
+       VALUES ('Cerrado', NOW(), 'Resolución aceptada por el estudiante', $1)`,
+      [idTicketInt]
+    );
+    await client.query('COMMIT');
+    return { idTicket: idTicketInt, estado: 'Cerrado' };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+module.exports = { crearTicket, obtenerTicketsEstudiante, obtenerUltimoTicket, obtenerDetalleTicket, cambiarEstadoTicket, obtenerHistorialTicketsAgente, repairDatabase, escalarTicket, aceptarResolucion }
