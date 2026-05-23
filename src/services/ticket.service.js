@@ -363,6 +363,30 @@ const obtenerHistorialTicketsAgente = async (idAgente) => {
   }));
 };
 
+const obtenerTicketsAbiertos = async () => {
+  const result = await pool.query(
+    `SELECT t.idticket, t.fechacreacion, t.prioridadsla, t.tipologiaitil, t.estado, t.descripcion, e.carne, u.nombrecompleto
+     FROM tickets t
+     JOIN estudiante e ON t.idestudiante = e.idestudiante
+     JOIN usuarios u ON e.idusuario = u.idusuario
+     WHERE t.estado = 'Abierto'
+     ORDER BY t.fechacreacion DESC`
+  );
+
+  console.log('Tickets abiertos encontrados:', result.rows.length);
+
+  return result.rows.map(ticket => ({
+    idTicket: ticket.idticket,
+    fechaCreacion: ticket.fechacreacion,
+    prioridadSLA: ticket.prioridadsla,
+    tipologiaITIL: ticket.tipologiaitil,
+    estado: ticket.estado,
+    descripcion: ticket.descripcion,
+    carneEstudiante: ticket.carne,
+    nombreEstudiante: ticket.nombrecompleto
+  }));
+};
+
 // ─── escalarTicket ─────────────────────────────────────────────────────────────
 const escalarTicket = async (idTicket) => {
   const idTicketInt = validarEntero(idTicket, 'ID_TICKET');
@@ -441,4 +465,15 @@ const aceptarResolucion = async (idTicket, idUsuario) => {
   }
 };
 
-module.exports = { crearTicket, obtenerTicketsEstudiante, obtenerUltimoTicket, obtenerDetalleTicket, cambiarEstadoTicket, obtenerHistorialTicketsAgente, repairDatabase, escalarTicket, aceptarResolucion }
+module.exports = { 
+  crearTicket, 
+  obtenerTicketsEstudiante, 
+  obtenerUltimoTicket, 
+  obtenerDetalleTicket, 
+  cambiarEstadoTicket, 
+  obtenerHistorialTicketsAgente, 
+  repairDatabase, 
+  escalarTicket, 
+  aceptarResolucion,
+  obtenerTicketsAbiertos
+}

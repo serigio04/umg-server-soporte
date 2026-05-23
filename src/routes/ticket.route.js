@@ -8,6 +8,7 @@ router.get('/', verificarToken, soloRol('Estudiante'), ticketController.obtenerM
 router.post('/', verificarToken, soloRol('Estudiante', 'Agente', 'Coordinador'), ticketController.crearTicket);
 router.get('/ultimo', verificarToken, soloRol('Estudiante'), ticketController.obtenerUltimoTicket);
 router.get('/historial/agente', verificarToken, soloRol('Agente', 'Coordinador'), ticketController.obtenerHistorialAgente);
+router.get('/abiertos', verificarToken, soloRol('Coordinador'), ticketController.obtenerTicketsAbiertos);
 
 // Rutas dinámicas después
 router.get('/:idTicket', verificarToken, ticketController.obtenerDetalle);
