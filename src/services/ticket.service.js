@@ -1,4 +1,6 @@
-const { pool } = require('../config/db')
+const { pool } = require('../config/db');
+const surveyService = require('./survey.service');
+
 
 const validarEntero = (valor, nombre) => {
   const entero = Number(valor)
@@ -214,7 +216,7 @@ const obtenerDetalleTicket = async (idTicket) => {
 }
 
 // ─── cambiarEstadoTicket ─────────────────────────────────────────────────────
-const cambiarEstadoTicket = async (idTicket, nuevoEstado, comentario) => {
+const cambiarEstadoTicket = async (idTicket, nuevoEstado, comentario, idEstudiante = null) => {
   const idTicketInt = validarEntero(idTicket, 'ID_TICKET');
   const estadosValidos = ['Abierto', 'EnProceso', 'Pendiente', 'Resuelto', 'Cerrado'];
   if (!estadosValidos.includes(nuevoEstado)) throw new Error('ESTADO_INVALIDO');
@@ -231,6 +233,18 @@ const cambiarEstadoTicket = async (idTicket, nuevoEstado, comentario) => {
     );
 
     console.log(`Estado del ticket ${idTicketInt} actualizado a ${nuevoEstado}`);
+
+    if (nuevoEstado === 'Resuelto' || nuevoEstado === 'Cerrado') {
+      if (!idEstudiante) {
+        const tRes = await client.query(
+          `SELECT idestudiante FROM tickets WHERE idticket = $1 LIMIT 1`,
+          [idTicketInt]
+        );
+        if (tRes.rows.length === 0) throw new Error('TICKET_NO_ENCONTRADO');
+        idEstudiante = tRes.rows[0].idestudiante;
+      }
+      await surveyService.crearEncuesta(idTicketInt, idEstudiante);
+    };
 
     await client.query(
       `INSERT INTO estadosticket (nombreestado, fechacambio, comentariotecnico, idticket)
