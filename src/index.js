@@ -13,6 +13,7 @@ app.use('/api/auth', require('./routes/auth.route'));
 app.use('/api/tickets', require('./routes/ticket.route'));
 app.use('/api/agentes', require('./routes/agente.route'));
 app.use('/api/estudiantes', require('./routes/student.route'));
+app.use('/api/conocimiento', require('./routes/conocimiento.route'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor corriendo' });
