@@ -7,4 +7,4 @@ router.get('/perfil',                         verificarToken, soloRol('Agente', 
 router.get('/:idAgente/ticket-prioridad',     verificarToken, soloRol('Agente', 'Coordinador'), agenteController.obtenerTicketPrioridad)
 router.get('/:idAgente/tickets',              verificarToken, soloRol('Agente', 'Coordinador'), agenteController.obtenerTicketsAsignados)
 
-module.exports = router
+module.exports = router;
