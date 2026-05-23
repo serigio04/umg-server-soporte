@@ -151,4 +151,24 @@ const aceptarResolucion = async (req, res) => {
   }
 };
 
-module.exports = { crearTicket, obtenerMisTickets, obtenerUltimoTicket, obtenerDetalle, cambiarEstado, obtenerHistorialAgente, escalar, aceptarResolucion }
+const obtenerTicketsAbiertos = async (req, res) => {
+  try {
+    const tickets = await ticketService.obtenerTicketsAbiertos();
+    res.json(tickets);
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ message: 'Error interno' });
+  }
+}
+
+module.exports = { 
+  crearTicket, 
+  obtenerMisTickets, 
+  obtenerUltimoTicket, 
+  obtenerDetalle, 
+  cambiarEstado, 
+  obtenerHistorialAgente, 
+  escalar, 
+  aceptarResolucion, 
+  obtenerTicketsAbiertos
+};
