@@ -55,11 +55,33 @@ const obtenerMetricasCoordinador = async () => {
     ORDER BY t.fechacreacion DESC
   `)
 
+  // 4. Calificaciones
+  const calificacionesAgentesQuery = await pool.query(`
+    SELECT u.nombrecompleto as agente, 
+           AVG(e.calificacion) as promedio_calificacion,
+           (AVG(e.calificacion) / 5.0) * 100 as porcentaje_calificacion
+    FROM encuestas e
+    JOIN tickets t ON e.idticket = t.idticket
+    JOIN agentes a ON t.idagente = a.idagente
+    JOIN usuarios u ON a.idusuario = u.idusuario
+    WHERE e.calificacion IS NOT NULL
+    GROUP BY u.nombrecompleto
+  `)
+
+  const calificacionGeneralQuery = await pool.query(`
+    SELECT AVG(calificacion) as promedio_calificacion, 
+           (AVG(calificacion) / 5.0) * 100 as porcentaje_calificacion
+    FROM encuestas
+    WHERE calificacion IS NOT NULL
+  `)
+
   return {
     tiempoPromedioResolucionHoras: tiempoResQuery.rows[0].tiempo_promedio_horas || 0,
     tiempoPromedioPorAgente: tiempoResPorAgenteQuery.rows,
     ticketsAbiertosPorAgente: ticketsPorAgenteQuery.rows,
-    slaVencidos: slaVencidosQuery.rows
+    slaVencidos: slaVencidosQuery.rows,
+    calificacionGeneral: calificacionGeneralQuery.rows[0] || { promedio_calificacion: 0, porcentaje_calificacion: 0 },
+    calificacionesPorAgente: calificacionesAgentesQuery.rows
   }
 }
 
@@ -134,4 +156,20 @@ const obtenerDatosReporteCsv = async () => {
   return query.rows
 }
 
-module.exports = { obtenerMetricasCoordinador, obtenerMetricasAgente, obtenerDatosReporteCsv }
+const obtenerDatosCalificacionesExcel = async () => {
+  const query = await pool.query(`
+    SELECT u.nombrecompleto as agente, 
+           ROUND(AVG(e.calificacion), 2) as promedio_calificacion,
+           ROUND((AVG(e.calificacion) / 5.0) * 100, 2) as porcentaje_calificacion
+    FROM encuestas e
+    JOIN tickets t ON e.idticket = t.idticket
+    JOIN agentes a ON t.idagente = a.idagente
+    JOIN usuarios u ON a.idusuario = u.idusuario
+    WHERE e.calificacion IS NOT NULL
+    GROUP BY u.nombrecompleto
+    ORDER BY promedio_calificacion DESC
+  `)
+  return query.rows
+}
+
+module.exports = { obtenerMetricasCoordinador, obtenerMetricasAgente, obtenerDatosReporteCsv, obtenerDatosCalificacionesExcel }

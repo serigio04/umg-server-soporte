@@ -99,4 +99,41 @@ const descargarReporteExcel = async (req, res) => {
   }
 }
 
-module.exports = { obtenerDashboardCoordinador, obtenerMetricasAgente, descargarReporteCsv, descargarReporteExcel }
+const descargarReporteCalificacionesExcel = async (req, res) => {
+  try {
+    const ExcelJS = require('exceljs');
+    const datos = await metricsService.obtenerDatosCalificacionesExcel();
+
+    if (datos.length === 0) {
+      return res.status(404).json({ message: 'No hay calificaciones para exportar' });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Calificaciones por Agente');
+
+    worksheet.columns = [
+      { header: 'Agente', key: 'agente', width: 30 },
+      { header: 'Promedio de Calificación (1-5)', key: 'promedio_calificacion', width: 35 },
+      { header: 'Porcentaje (%)', key: 'porcentaje_calificacion', width: 20 }
+    ];
+
+    datos.forEach(a => {
+      worksheet.addRow({
+        agente: a.agente,
+        promedio_calificacion: Number(a.promedio_calificacion).toFixed(2),
+        porcentaje_calificacion: Number(a.porcentaje_calificacion).toFixed(2) + '%'
+      });
+    });
+
+    res.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.attachment('reporte_calificaciones_agentes.xlsx');
+    
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('Error descargando reporte Excel de calificaciones:', err);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+}
+
+module.exports = { obtenerDashboardCoordinador, obtenerMetricasAgente, descargarReporteCsv, descargarReporteExcel, descargarReporteCalificacionesExcel }
