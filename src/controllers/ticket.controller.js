@@ -120,4 +120,35 @@ const obtenerHistorialAgente = async (req, res) => {
   };
 };
 
-module.exports = { crearTicket, obtenerMisTickets, obtenerUltimoTicket, obtenerDetalle, cambiarEstado, obtenerHistorialAgente }
+// ─── escalar ────────────────────────────────────────────────────────────────
+const escalar = async (req, res) => {
+  const { idTicket } = req.params
+
+  try {
+    const resultado = await ticketService.escalarTicket(idTicket)
+    res.json(resultado)
+  } catch (err) {
+    if (err.message === 'COORDINADOR_NO_ENCONTRADO')
+      return res.status(404).json({ message: 'No se encontró un coordinador activo' })
+    console.error('Error escalando ticket:', err)
+    res.status(500).json({ message: 'Error interno' })
+  }
+}
+
+// ─── aceptarResolucion ───────────────────────────────────────────────────────
+const aceptarResolucion = async (req, res) => {
+  const { idTicket } = req.params;
+  try {
+    const resultado = await ticketService.aceptarResolucion(idTicket, req.usuario.idUsuario);
+    res.json(resultado);
+  } catch (err) {
+    if (err.message === 'TICKET_NO_ENCONTRADO')
+      return res.status(404).json({ message: 'Ticket no encontrado o no te pertenece' });
+    if (err.message === 'TICKET_NO_RESUELTO')
+      return res.status(400).json({ message: 'El ticket no está en estado Resuelto' });
+    console.error('Error al aceptar resolución:', err);
+    res.status(500).json({ message: 'Error interno' });
+  }
+};
+
+module.exports = { crearTicket, obtenerMisTickets, obtenerUltimoTicket, obtenerDetalle, cambiarEstado, obtenerHistorialAgente, escalar, aceptarResolucion }
