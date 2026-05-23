@@ -89,17 +89,29 @@ const cambiarEstado = async (req, res) => {
   if (!nuevoEstado) return res.status(400).json({ message: 'Estado requerido' })
 
   try {
-    const idTicketInt = Number(idTicket);
-    if (!Number.isInteger(idTicketInt) || Number.isNaN(idTicketInt)) {
-      return res.status(400).json({ message: 'ID de ticket inválido' });
-    }
-    const resultado = await ticketService.cambiarEstadoTicket(idTicketInt, nuevoEstado, comentario || '');
-    res.json(resultado);
+    const idTicketInt = Number(idTicket)
+    if (!Number.isInteger(idTicketInt) || Number.isNaN(idTicketInt))
+      return res.status(400).json({ message: 'ID de ticket inválido' })
+
+    const ticket = await pool.query(
+      `SELECT idestudiante FROM tickets WHERE idticket = $1`,
+      [idTicketInt]
+    )
+    if (ticket.rows.length === 0)
+      return res.status(404).json({ message: 'Ticket no encontrado' })
+
+    const resultado = await ticketService.cambiarEstadoTicket(
+      idTicketInt,
+      nuevoEstado,
+      comentario || '',
+      ticket.rows[0].idestudiante
+    )
+    res.json(resultado)
   } catch (err) {
     if (err.message === 'ESTADO_INVALIDO')
-      return res.status(400).json({ message: 'Estado inválido' });    if (err.message === 'ID_TICKET_INVALIDO')
-      return res.status(400).json({ message: 'ID de ticket inválido' });    console.error('Error:', err);
-    res.status(500).json({ message: 'Error interno' });
+      return res.status(400).json({ message: 'Estado inválido' })
+    console.error('Error:', err)
+    res.status(500).json({ message: 'Error interno' })
   }
 }
 

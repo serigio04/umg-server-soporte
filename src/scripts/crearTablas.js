@@ -61,6 +61,16 @@ async function crearTablas() {
       Vistas            INTEGER      DEFAULT 0,
       IdBase            INTEGER      REFERENCES BasesConocimiento(IdBase)
     );
+
+    CREATE TABLE IF NOT EXISTS encuestas (
+      idencuesta SERIAL PRIMARY KEY,
+      idticket INTEGER REFERENCES tickets(idticket),
+      idestudiante INTEGER REFERENCES estudiante(idestudiante),
+      calificacion INTEGER,
+      comentario VARCHAR(500),
+      fechacreacion TIMESTAMP DEFAULT NOW(),
+      fecharespuesta TIMESTAMP
+    );
   `)
 
   console.log('✅ Tablas creadas en Neon')

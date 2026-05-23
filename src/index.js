@@ -17,6 +17,7 @@ app.use('/api/conocimiento', require('./routes/conocimiento.route'));
 app.use('/api/repair.all', require('./routes/repair.route'));
 app.use('/api/usuarios', require('./routes/user.route'));
 app.use('/api/metricas', require('./routes/metrics.route'));
+app.use('/api/encuestas', require('./routes/survey.route'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor corriendo' });
