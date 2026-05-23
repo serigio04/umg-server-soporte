@@ -308,6 +308,5 @@ module.exports = {
   obtenerUltimoTicket, 
   obtenerDetalleTicket, 
   cambiarEstadoTicket,
-  escalarTicket,
   obtenerHistorialTicketsAgente
 }
