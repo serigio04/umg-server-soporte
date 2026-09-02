@@ -128,26 +128,48 @@ Deberías recibir:
 │   ├── config/
 │   │   └── db.js                  # Conexión y pool (pg) — usa DB_CONNECTION
 │   ├── controllers/               # Reciben req/res, llaman a servicios
+│   │   ├── agente.controller.js
 │   │   ├── auth.controller.js
+│   │   ├── conocimiento.controller.js
+│   │   ├── metrics.controller.js
+│   │   ├── repair.controller.js
+│   │   ├── student.controller.js
+│   │   ├── survey.controller.js
 │   │   ├── ticket.controller.js
-│   │   └── agente.controller.js
+│   │   └── user.controller.js
 │   ├── services/                  # Lógica de negocio y consultas PostgreSQL
+│   │   ├── agente.service.js
 │   │   ├── auth.service.js
+│   │   ├── conocimiento.service.js
+│   │   ├── metrics.service.js
+│   │   ├── repair.service.js
+│   │   ├── student.service.js
+│   │   ├── survey.service.js
 │   │   ├── ticket.service.js
-│   │   └── agente.service.js
+│   │   └── user.service.js
 │   ├── routes/                    # Definición de endpoints
+│   │   ├── agente.route.js
 │   │   ├── auth.route.js
+│   │   ├── conocimiento.route.js
+│   │   ├── metrics.route.js
+│   │   ├── repair.route.js
+│   │   ├── student.route.js
+│   │   ├── survey.route.js
 │   │   ├── ticket.route.js
-│   │   └── agente.route.js
+│   │   └── user.route.js
 │   ├── middlewares/
 │   │   └── auth.middleware.js     # Verificación JWT y roles
 │   ├── scripts/
-│   │   ├── seedUsuario.js
+│   │   ├── crearTablas.js         # Crea las tablas en la BD
 │   │   ├── seedAgente.js
 │   │   ├── seedAgentes.js
-│   │   └── seedCoordinador.js
+│   │   ├── seedCoordinador.js
+│   │   ├── seedEstudiantes.js
+│   │   ├── seedUsuario.js
+│   │   └── testConocimiento.js
 │   └── index.js                   # Punto de entrada
 ├── .env                           # Variables de entorno (NO en el repo)
+├── .gitignore
 └── package.json
 ```
 
@@ -163,9 +185,15 @@ Deberías recibir:
 ### Tickets
 | Método | Endpoint | Descripción | Auth |
 |---|---|---|---|
-| POST | `/api/tickets` | Crear ticket (asigna agente automáticamente) | Estudiante |
+| POST | `/api/tickets` | Crear ticket (asigna agente automáticamente) | Estudiante, Agente, Coordinador |
 | GET | `/api/tickets` | Obtener mis tickets | Estudiante |
 | GET | `/api/tickets/ultimo` | Obtener último ticket abierto | Estudiante |
+| GET | `/api/tickets/historial/agente` | Obtener historial de tickets del agente | Agente, Coordinador |
+| GET | `/api/tickets/abiertos` | Obtener todos los tickets abiertos | Coordinador |
+| GET | `/api/tickets/:idTicket` | Obtener detalle de un ticket | Autenticado |
+| PUT | `/api/tickets/:idTicket/estado` | Cambiar estado del ticket | Agente, Coordinador |
+| PUT | `/api/tickets/:idTicket/aceptar` | Aceptar resolución del ticket | Estudiante |
+| PUT | `/api/tickets/:idTicket/escalar` | Escalar ticket a nivel superior | Agente |
 
 ### Agentes
 | Método | Endpoint | Descripción | Auth |
@@ -174,23 +202,69 @@ Deberías recibir:
 | GET | `/api/agentes/:idAgente/tickets` | Obtener tickets asignados al agente | Agente, Coordinador |
 | GET | `/api/agentes/:idAgente/ticket-prioridad` | Obtener ticket de mayor prioridad abierto | Agente, Coordinador |
 
+### Estudiantes
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| GET | `/api/estudiantes/perfil` | Obtener perfil del estudiante autenticado | Estudiante |
+| GET | `/api/estudiantes/:carne` | Obtener estudiante por carné | Estudiante |
+
+### Base de Conocimiento
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| GET | `/api/conocimiento` | Obtener todos los artículos | Público |
+| GET | `/api/conocimiento/:idArticulo` | Obtener un artículo específico | Público |
+| POST | `/api/conocimiento` | Crear artículo | Agente, Coordinador |
+| PUT | `/api/conocimiento/:idArticulo` | Actualizar artículo | Agente, Coordinador |
+| DELETE | `/api/conocimiento/:idArticulo` | Eliminar artículo | Agente, Coordinador |
+
+### Usuarios (Gestión)
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| POST | `/api/usuarios/agente` | Registrar nuevo agente | Coordinador |
+| POST | `/api/usuarios/estudiante` | Registrar nuevo estudiante | Coordinador |
+| GET | `/api/usuarios/agentes` | Listar todos los agentes | Coordinador |
+| PUT | `/api/usuarios/agentes/:idAgente/especialidad` | Modificar especialidad del agente | Coordinador |
+| PUT | `/api/usuarios/password` | Cambiar contraseña | Autenticado |
+
+### Métricas y Reportes
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| GET | `/api/metricas/dashboard` | Dashboard del coordinador | Coordinador |
+| GET | `/api/metricas/agente/:idAgente` | Métricas de un agente específico | Agente, Coordinador |
+| GET | `/api/metricas/reporte-csv` | Descargar reporte en CSV | Coordinador, Agente |
+| GET | `/api/metricas/reporte-excel` | Descargar reporte en Excel | Coordinador |
+| GET | `/api/metricas/reporte-calificaciones-excel` | Descargar reporte de calificaciones (Excel) | Coordinador |
+
+### Encuestas
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| POST | `/api/encuestas/:idEncuesta/responder` | Enviar respuestas de encuesta | Autenticado |
+| GET | `/api/encuestas/ticket/:idTicket` | Obtener encuesta asociada a ticket | Autenticado |
+
+### Mantenimiento
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| GET | `/api/repair.all/repair-all` | Reparar/sincronizar datos en BD | No |
+
 ---
 
-## Tablas Oracle utilizadas
+## Tablas PostgreSQL utilizadas
 
 | Tabla | Descripción |
 |---|---|
-| `Usuarios` | Base de autenticación con roles |
+| `Usuarios` | Base de autenticación con roles (Estudiante, Agente, Coordinador) |
 | `Estudiantes` | Perfil del estudiante con carné y carrera |
-| `AgenteSoporte` | Agente con especialidad y sede |
+| `AgenteSoporte` | Agente con especialidad (Incidente, Solicitud, Cambio) y sede |
 | `Tickets` | Solicitud/incidencia con SLA |
 | `EstadosTicket` | Historial de cambios de estado del ticket |
-| `BasesConocimiento` | Repositorio de artículos de ayuda |
-| `Articulos` | Artículo individual de autogestión |
+| `BasesConocimiento` | Repositorio de bases de conocimiento |
+| `Articulos` | Artículos individuales de autogestión y ayuda |
+| `Encuestas` | Encuestas de satisfacción |
+| `RespuestasEncuesta` | Respuestas de usuarios a las encuestas |
 
 ---
 
-## ⚠️ Problemas comunes y comprobaciones
+## Problemas comunes y comprobaciones
 
 - **Cadena de conexión inválida / error de conexión:** Verifica que `DB_CONNECTION` en `.env` esté bien formada y que la base de datos PostgreSQL esté accesible.
 - **Tablas faltantes / errores en queries:** Revisa que las migraciones o scripts de creación de tablas se hayan ejecutado antes de correr los seeds.
