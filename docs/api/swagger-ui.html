@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Swagger UI - API Sistema de Tickets UMG</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui.min.css" />
+  <style>
+    body { margin: 0; background: #fafafa; }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.min.js"></script>
+  <script>
+    window.onload = () => {
+      window.ui = SwaggerUIBundle({
+        url: "./openapi.yaml",
+        dom_id: "#swagger-ui",
+        presets: [
+          SwaggerUIBundle.presets.apis
+        ],
+        layout: "BaseLayout",
+        onComplete: () => console.log("Swagger UI cargado correctamente"),
+        onFailure: (err) => console.error("Error cargando la especificación:", err)
+      });
+    };
+  </script>
+</body>
+</html>
